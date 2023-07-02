@@ -19,7 +19,8 @@ class SampleTest(unittest.TestCase):
     def test_insert(self):
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sample = Sample(col_var='i', col_text='6', col_tinyint=1, col_int=5, col_double=3.5, col_datetime=now)
-        sample_dao.insert_sample(sample)
+        entity = sample_dao.insert_sample(sample)
+        print(entity.id)
         entities, total = sample_dao.select_sample(sample)
         print([item for item in inspect.getmembers(entities[0]) if isinstance(item[1], (str, int, float, datetime))])
         self.assertEqual(1, total)

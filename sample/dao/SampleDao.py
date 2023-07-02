@@ -29,6 +29,10 @@ class SampleDao(BaseDao):
                 col_var=sample.col_var, col_text=sample.col_text, col_tinyint=sample.col_tinyint, 
                 col_int=sample.col_int, col_double=sample.col_double, col_datetime=sample.col_datetime)
         session.add(entity)
+        session.flush()
+        session.refresh(entity)
+        session.expunge(entity)
+        return entity
 
     @transactional
     def update_sample(self, condition: Sample, sample: Sample):
