@@ -2,6 +2,8 @@ import threading
 
 from sqlalchemy.orm import Session
 
+from sqldaogenerator.logger.logger import info
+
 # Create a thread-local object
 transaction = threading.local()
 transaction.is_exists = False
@@ -17,10 +19,10 @@ def get_transaction() -> Session:
 def transactional(func):
     def wrapper(*args, **kwargs):
         if transaction.is_exists:
-            print('Participating in an existing transaction.')
+            info('Participating in an existing transaction.')
             result = func(*args, **kwargs)
         else:
-            print('Creating a new transaction.')
+            info('Creating a new transaction.')
             with transaction.Session() as session:
                 transaction.is_exists = True
                 transaction.session = session
