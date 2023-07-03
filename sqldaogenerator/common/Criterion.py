@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from sqlalchemy import Column
@@ -23,14 +23,15 @@ class Criterion:
         return self.equals_filters + self.in_filters + self.gte_filters + self.lte_filters + self.date_filters
 
 
+@dataclass
 class CriterionBuilder:
-    entity_attr: Base
-    condition_attr: General
-    equals_filters = []
-    in_filters = []
-    gte_filters = []
-    lte_filters = []
-    date_filters = []
+    entity_attr: Base = None
+    condition_attr: General = None
+    equals_filters: list[any] = field(default_factory=list)
+    in_filters: list[any] = field(default_factory=list)
+    gte_filters: list[any] = field(default_factory=list)
+    lte_filters: list[any] = field(default_factory=list)
+    date_filters: list[any] = field(default_factory=list)
 
     def entity(self, entity):
         self.entity_attr = entity

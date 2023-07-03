@@ -11,10 +11,10 @@ class SampleDao(BaseDao):
     def select_sample(self, condition: Sample) -> tuple[list[SampleE], int]:
         criterion = Criterion.builder() \
             .equals_filter(condition.equals_filters()).in_filter(condition.in_filters()).gte_filter(condition.gte_filters()) \
-            .lte_filter(condition.lte_filters()).date_filter(condition.date_filters()).build()
+            .lte_filter(condition.lte_filters()).date_filter(condition.date_filters()).build().to_list()
         with self.Session() as session:
             orders = condition.order_by.split(' ')
-            query = session.query(SampleE).filter(*criterion.to_list()).order_by(eval(f"SampleE.{orders[0]}.{orders[1]}()"))
+            query = session.query(SampleE).filter(*criterion).order_by(eval(f"SampleE.{orders[0]}.{orders[1]}()"))
             total = None
             if condition.page is not None and condition.page_size is not None:
                 query = query.offset((condition.page - 1) * condition.page_size).limit(condition.page_size)
@@ -26,8 +26,8 @@ class SampleDao(BaseDao):
     def insert_sample(self, sample: Sample):
         session = get_transaction()
         entity = SampleE(
-                col_var=sample.col_var, col_text=sample.col_text, col_tinyint=sample.col_tinyint, 
-                col_int=sample.col_int, col_double=sample.col_double, col_datetime=sample.col_datetime)
+                col_datetime=sample.col_datetime, col_double=sample.col_double, col_int=sample.col_int, 
+                col_text=sample.col_text, col_tinyint=sample.col_tinyint, col_var=sample.col_var)
         session.add(entity)
         session.flush()
         session.refresh(entity)
@@ -39,20 +39,20 @@ class SampleDao(BaseDao):
         session = get_transaction()
         criterion = Criterion.builder() \
             .equals_filter(condition.equals_filters()).in_filter(condition.in_filters()).gte_filter(condition.gte_filters()) \
-            .lte_filter(condition.lte_filters()).date_filter(condition.date_filters()).build()
-        entities = session.query(SampleE).filter(*criterion.to_list()).all()
+            .lte_filter(condition.lte_filters()).date_filter(condition.date_filters()).build().to_list()
+        entities = session.query(SampleE).filter(*criterion).all()
         for entity in entities:
             self.set_not_none(entity, sample, 
-                              'col_var', 'col_text', 'col_tinyint', 
-                              'col_int', 'col_double', 'col_datetime')
+                              'col_datetime', 'col_double', 'col_int', 
+                              'col_text', 'col_tinyint', 'col_var')
 
     @transactional
     def delete_sample(self, condition: Sample):
         session = get_transaction()
         criterion = Criterion.builder() \
             .equals_filter(condition.equals_filters()).in_filter(condition.in_filters()).gte_filter(condition.gte_filters()) \
-            .lte_filter(condition.lte_filters()).date_filter(condition.date_filters()).build()
-        entities = session.query(SampleE).filter(*criterion.to_list()).all()
+            .lte_filter(condition.lte_filters()).date_filter(condition.date_filters()).build().to_list()
+        entities = session.query(SampleE).filter(*criterion).all()
         for entity in entities:
             session.delete(entity)
 

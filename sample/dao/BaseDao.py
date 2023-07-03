@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from sqldaogenerator.common.transaction_holder import transaction
+from sqldaogenerator.common.transaction_holder import register_session_maker
 from sqldaogenerator.entity.General import General
 from sqldaogenerator.entity.base import Base
 
@@ -19,9 +19,9 @@ class BaseDao:
         connection_string = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{dbname}"
         self.engine = create_engine(connection_string, echo=True, pool_recycle=270)
         self.Session = sessionmaker(bind=self.engine)
-        transaction.Session = self.Session
+        register_session_maker(self.Session)
 
-    def set_not_none(self, entity: Base, condition: General, *criterion: str):
+    def set_not_none(self, entity: Base, model: General, *criterion: str):
         for value in criterion:
-            if value is not None:
-                exec(f"entity.{value}=condition.{value}")
+            if model[value] is not None:
+                exec(f"entity.{value}=model.{value}")

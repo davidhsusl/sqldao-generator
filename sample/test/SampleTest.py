@@ -10,7 +10,7 @@ class SampleTest(unittest.TestCase):
 
     def test_select(self):
         criterion = Sample(col_var='n', col_text_in=['m'], col_tinyint_gte=3, col_int_lte=9, col_double=6.5,
-                           col_datetime_start='2023-07-01 21:30:55', col_datetime_end='2023-07-01 21:30:57')
+                           col_datetime_start='2023-07-01 21:30:55', col_datetime_end='2023-07-01 21:30:57', page=1, page_size=10)
         entities, total = sample_dao.select_sample(criterion)
         for entity in entities:
             print([item for item in inspect.getmembers(entity) if isinstance(item[1], (str, int, float, datetime))])
@@ -35,7 +35,7 @@ class SampleTest(unittest.TestCase):
         self.assertEqual(2, total)
 
     def test_delete(self):
-        criterion = Sample(id_in=[4])
+        criterion = Sample(id_in=[3])
         sample_dao.delete_sample(criterion)
         entities, total = sample_dao.select_sample(criterion)
         self.assertEqual(0, total)

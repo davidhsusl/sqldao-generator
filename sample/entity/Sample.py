@@ -13,67 +13,67 @@ from sqldaogenerator.entity.base import Base
 class SampleE(Base):
     __tablename__ = 't_sample'
 
-    id = Column(BigInteger, autoincrement=True, primary_key=True, comment='主鍵')
-    col_var = Column(VARCHAR, comment='字串')
+    col_datetime = Column(DateTime, comment='時間')
+    col_double = Column(Double, comment='浮點數')
+    col_int = Column(Integer, comment='整數')
     col_text = Column(Text, comment='長字串')
     col_tinyint = Column(SmallInteger, comment='微整數')
-    col_int = Column(Integer, comment='整數')
-    col_double = Column(Double, comment='浮點數')
-    col_datetime = Column(DateTime, comment='時間')
+    col_var = Column(VARCHAR, comment='字串')
+    id = Column(BigInteger, autoincrement=True, primary_key=True, comment='主鍵')
 
 
 @dataclass
 class Sample(General, Page):
-    col_var: str = None
-    col_var_in: list[str] = None
+    col_datetime: datetime | str = None
+    col_datetime_in: datetime | str = None
+    col_datetime_start: datetime | str = None
+    col_datetime_end: datetime | str = None
+    col_double: float = None
+    col_double_in: list[float] = None
+    col_double_gte: float = None
+    col_double_lte: float = None
+    col_int: int = None
+    col_int_in: list[int] = None
+    col_int_gte: int = None
+    col_int_lte: int = None
     col_text: str = None
     col_text_in: list[str] = None
     col_tinyint: int = None
     col_tinyint_in: list[int] = None
     col_tinyint_gte: int = None
     col_tinyint_lte: int = None
-    col_int: int = None
-    col_int_in: list[int] = None
-    col_int_gte: int = None
-    col_int_lte: int = None
-    col_double: float = None
-    col_double_in: list[float] = None
-    col_double_gte: float = None
-    col_double_lte: float = None
-    col_datetime: datetime | str = None
-    col_datetime_in: datetime | str = None
-    col_datetime_start: datetime | str = None
-    col_datetime_end: datetime | str = None
+    col_var: str = None
+    col_var_in: list[str] = None
 
     def equals_filters(self):
-        return [(SampleE.id, self.id),
-                (SampleE.col_var, self.col_var),
+        return [(SampleE.col_datetime, self.col_datetime),
+                (SampleE.col_double, self.col_double),
+                (SampleE.col_int, self.col_int),
                 (SampleE.col_text, self.col_text),
                 (SampleE.col_tinyint, self.col_tinyint),
-                (SampleE.col_int, self.col_int),
-                (SampleE.col_double, self.col_double),
-                (SampleE.col_datetime, self.col_datetime)]
+                (SampleE.col_var, self.col_var),
+                (SampleE.id, self.id)]
 
     def in_filters(self):
-        return [(SampleE.id, self.id_in),
-                (SampleE.col_var, self.col_var_in),
+        return [(SampleE.col_datetime, self.col_datetime_in),
+                (SampleE.col_double, self.col_double_in),
+                (SampleE.col_int, self.col_int_in),
                 (SampleE.col_text, self.col_text_in),
                 (SampleE.col_tinyint, self.col_tinyint_in),
-                (SampleE.col_int, self.col_int_in),
-                (SampleE.col_double, self.col_double_in),
-                (SampleE.col_datetime, self.col_datetime_in)]
+                (SampleE.col_var, self.col_var_in),
+                (SampleE.id, self.id_in)]
 
     def gte_filters(self):
-        return [(SampleE.id, self.id_gte),
-                (SampleE.col_tinyint, self.col_tinyint_gte),
+        return [(SampleE.col_double, self.col_double_gte),
                 (SampleE.col_int, self.col_int_gte),
-                (SampleE.col_double, self.col_double_gte)]
+                (SampleE.col_tinyint, self.col_tinyint_gte),
+                (SampleE.id, self.id_gte)]
 
     def lte_filters(self):
-        return [(SampleE.id, self.id_lte),
-                (SampleE.col_tinyint, self.col_tinyint_lte),
+        return [(SampleE.col_double, self.col_double_lte),
                 (SampleE.col_int, self.col_int_lte),
-                (SampleE.col_double, self.col_double_lte)]
+                (SampleE.col_tinyint, self.col_tinyint_lte),
+                (SampleE.id, self.id_lte)]
 
     def date_filters(self):
         return [(SampleE.col_datetime, (self.col_datetime_start, self.col_datetime_end))]

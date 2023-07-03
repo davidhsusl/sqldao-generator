@@ -17,10 +17,10 @@ insert_template = "{column}={entity_variable}.{column}"
 
 
 def generate(user: str, password: str, host: str, port: int, database: str, base_dao_package: ModuleType, base_dao_name: str,
-             entity_package: ModuleType, dao_package: ModuleType, table: str, entity_name: str):
+             entity_package: ModuleType, dao_package: ModuleType, table: str, entity_name: str, override_base_dao=False):
     # create a BaseDao
     base_dao_file = pkg_resources.files(base_dao_package).joinpath(f"{base_dao_name}.py")
-    if not base_dao_file.is_file():
+    if override_base_dao or not base_dao_file.is_file():
         template = pkg_resources.files(resources).joinpath('base_dao_template.txt').read_text()
         template = template.format(name=base_dao_name, user=user, password=password, host=host, port=port, dbname=database)
         with base_dao_file.open('w', encoding='utf-8') as file:
@@ -112,5 +112,5 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
 
 if __name__ == '__main__':
     generate('daniel', '0614', 'localhost', 3306, 'database_test',
-             base_dao_package=dao, base_dao_name='BaseDao',
+             base_dao_package=dao, base_dao_name='BaseDao', override_base_dao=True,
              entity_package=entity, dao_package=dao, table='t_sample', entity_name='Sample')
