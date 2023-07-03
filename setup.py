@@ -11,8 +11,8 @@ setup(
     packages=find_packages(include=['sqldaogenerator.*']),
     package_data={'': ['*.json', '*.txt']},
     install_requires=[
-        'mysql-connector-python==8.0.33',
-        'SQLAlchemy==2.0.17'
+        'mysql-connector-python==>=8.0.0,<9.0.0',
+        'SQLAlchemy>=2.0.0,<3.0.0'
     ],
     author_email='',
     classifiers=[
