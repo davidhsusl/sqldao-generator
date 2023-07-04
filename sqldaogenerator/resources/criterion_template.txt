@@ -10,16 +10,16 @@ from sqldaogenerator.entity.Page import Page
 
 @dataclass
 class {entity_name}Criterion:
+    page = Page()
     filters: list[any] = field(default_factory=list)
     values: dict[any] = field(default_factory=dict)
-    page = Page()
 
     @classmethod
     def builder(cls):
         return cls()
 
     def build(self):
-        return Criterion(filters=self.filters, values=self.values, page=self.page)
+        return Criterion(page=self.page, filters=self.filters, values=self.values)
 
     def order_by(self, value: str):
         self.page.order_by = value
