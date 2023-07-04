@@ -1,6 +1,5 @@
 from {base_dao_package}.{base_dao_name} import {base_dao_name}
 from {entity_package}.{entity_name} import {entity_name}
-from {entity_package}.{entity_name}Criterion import {entity_name}Criterion
 from sqldaogenerator.common.Criterion import Criterion
 from sqldaogenerator.common.transaction_holder import transactional, get_transaction
 
@@ -9,21 +8,21 @@ from sqldaogenerator.common.transaction_holder import transactional, get_transac
 
 class {entity_name}Dao({base_dao_name}):
 
-    def select_{entity_variable}(self, condition: {entity_name}Criterion) -> tuple[list[{entity_name}], int]:
-        criterion = Criterion.builder().entity({entity_name}).condition(condition) \
-            .equals_filter().in_filter().gte_filter().lte_filter().date_filter().build().to_list()
+    def select_{entity_variable}(self, criterion: Criterion) -> tuple[list[{entity_name}], int]:
         with self.Session() as session:
-            orders = condition.order_by.split(' ')
-            query = session.query({entity_name}).filter(*criterion).order_by(eval(f"{entity_name}.{{orders[0]}}.{{orders[1]}}()"))
+            criterion_list = criterion.to_list()
+            page = criterion.page
+            orders = page.order_by.split(' ')
+            query = session.query({entity_name}).filter(*criterion_list).order_by(eval(f"{entity_name}.{{orders[0]}}.{{orders[1]}}()"))
             total = None
-            if condition.page is not None and condition.page_size is not None:
-                query = query.offset((condition.page - 1) * condition.page_size).limit(condition.page_size)
-                total = session.query({entity_name}).filter(*criterion).count()
+            if page.page_no is not None and page.page_size is not None:
+                query = query.offset((page.page_no - 1) * page.page_size).limit(page.page_size)
+                total = session.query({entity_name}).filter(*criterion_list).count()
             entities = query.all()
         return entities, len(entities) if total is None else total
 
     @transactional
-    def insert_{entity_variable}(self, {entity_variable}: {entity_name}Criterion):
+    def insert_{entity_variable}(self, criterion: Criterion):
         session = get_transaction()
         entity = {entity_name}({insert_columns})
         session.add(entity)
@@ -33,20 +32,17 @@ class {entity_name}Dao({base_dao_name}):
         return entity
 
     @transactional
-    def update_{entity_variable}(self, condition: {entity_name}Criterion, {entity_variable}: {entity_name}Criterion):
+    def update_{entity_variable}(self, criterion: Criterion):
         session = get_transaction()
-        criterion = Criterion.builder().entity({entity_name}).condition(condition) \
-            .equals_filter().in_filter().gte_filter().lte_filter().date_filter().build().to_list()
-        entities = session.query({entity_name}).filter(*criterion).all()
+        entities = session.query({entity_name}).filter(*criterion.to_list()).all()
         for entity in entities:
-            self.set_not_none(entity, {entity_variable}, {update_columns})
+            for key, value in criterion.items():
+                exec(f"entity.{{key}}=value")
 
     @transactional
-    def delete_{entity_variable}(self, condition: {entity_name}Criterion):
+    def delete_{entity_variable}(self, criterion: Criterion):
         session = get_transaction()
-        criterion = Criterion.builder().entity({entity_name}).condition(condition) \
-            .equals_filter().in_filter().gte_filter().lte_filter().date_filter().build().to_list()
-        entities = session.query({entity_name}).filter(*criterion).all()
+        entities = session.query({entity_name}).filter(*criterion.to_list()).all()
         for entity in entities:
             session.delete(entity)
 

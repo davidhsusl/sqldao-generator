@@ -10,10 +10,45 @@ from sqldaogenerator.generator.enums.MySqlTypeEnum import MySqlTypeEnum
 
 primary_key_template = "{column} = Column({type}, autoincrement=True, primary_key=True, comment='{comment}')"
 column_template = "{column} = Column({type}, comment='{comment}')"
-field_template = "{name}: {type} = None"
-filter_template = "({name}.{column}, criterion.{field})"
-date_filter_template = "({name}.{column}, (criterion.{column}_start, criterion.{column}_end))"
-insert_template = "{column}={entity_variable}.{column}"
+set_template = """def set_{column}(self, value: {type}):
+        self.values['{column}'] = value
+        return self"""
+filter_template = """def {column}{suffix}(self, value: {type} = None{other}):
+        if value is not None{condition}:
+            self.filters.append({entity_name}.{column}{expression})
+        return self"""
+insert_template = "{column}=criterion.get('{column}', None)"
+
+
+def add_set(sets: list[str], column: str, type: str):
+    sets.append(set_template.format(column=column, type=type))
+
+
+def add_equal(filters: list[str], column: str, type: str, entity_name: str):
+    filters.append(filter_template.format(column=column, suffix='', type=type, entity_name=entity_name,
+                                          condition=" and value != ''", expression=' == value', other=''))
+    filters.append(filter_template.format(column=column, suffix='_in', type=f"list[{type}]", entity_name=entity_name,
+                                          condition=" and len(value) > 0", expression='.in_(value)', other=''))
+
+
+def add_num(filters: list[str], column: str, type: str, entity_name: str):
+    filters.append(filter_template.format(column=column, suffix='_gte', type=type, entity_name=entity_name,
+                                          condition="", expression=' >= value', other=''))
+    filters.append(filter_template.format(column=column, suffix='_lte', type=type, entity_name=entity_name,
+                                          condition="", expression=' <= value', other=''))
+
+
+def add_datetime(filters: list[str], column: str, type: str, entity_name: str):
+    filters.append(filter_template.format(column=column, suffix='_start', type=type, entity_name=entity_name,
+                                          condition=" and value != ''", expression=' >= value', other=''))
+    filters.append(filter_template.format(column=column, suffix='_end', type=type, entity_name=entity_name,
+                                          condition=" and value != ''", expression=' <= value', other=''))
+
+
+def add_like(filters: list[str], column: str, type: str, entity_name: str):
+    filters.append(filter_template.format(column=column, suffix='_like', type=type, entity_name=entity_name,
+                                          condition=" and value != ''", expression='.like(f"{left}{value}{right}")',
+                                          other=", left='%', right='%'"))
 
 
 def generate(user: str, password: str, host: str, port: int, database: str, base_dao_package: ModuleType, base_dao_name: str,
@@ -39,14 +74,9 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
     camelcased_word = re.findall('[A-Z][a-z0-9]*', entity_name)
     underlined_word = '_'.join(camelcased_word).lower()
     columns = []
-    fields = []
-    equals_filters = []
-    in_filters = []
-    gte_filters = []
-    lte_filters = []
-    date_filters = []
+    sets = []
+    filters = []
     insert_columns = []
-    update_columns = []
     for result in results:
         column_name = result.COLUMN_NAME.lower()
         data_type = result.DATA_TYPE
@@ -62,38 +92,31 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
         # fields, filters
         match [column_name, data_type]:
             case [_, ('varchar' | 'text')]:
-                fields.append(field_template.format(name=column_name, type='str'))
-                fields.append(field_template.format(name=f"{column_name}_in", type='list[str]'))
-            case [name, ('tinyint' | 'int' | 'double' | 'bigint') as db_type]:
+                py_type = 'str'
+                add_set(sets, column_name, py_type)
+                add_equal(filters, column_name, py_type, entity_name)
+                add_like(filters, column_name, py_type, entity_name)
+            case [_, ('tinyint' | 'int' | 'double' | 'bigint') as db_type]:
                 py_type = 'float' if db_type == 'double' else 'int'
-                if name != 'id':
-                    fields.append(field_template.format(name=column_name, type=py_type))
-                    fields.append(field_template.format(name=f"{column_name}_in", type=f'list[{py_type}]'))
-                    fields.append(field_template.format(name=f"{column_name}_gte", type=py_type))
-                    fields.append(field_template.format(name=f"{column_name}_lte", type=py_type))
-                gte_filters.append(filter_template.format(name=entity_name, column=column_name, field=f"{column_name}_gte"))
-                lte_filters.append(filter_template.format(name=entity_name, column=column_name, field=f"{column_name}_lte"))
+                add_set(sets, column_name, py_type)
+                add_equal(filters, column_name, py_type, entity_name)
+                add_num(filters, column_name, py_type, entity_name)
             case [_, ('datetime')]:
-                fields.append(field_template.format(name=column_name, type='datetime | str'))
-                fields.append(field_template.format(name=f"{column_name}_in", type='datetime | str'))
-                fields.append(field_template.format(name=f"{column_name}_start", type='datetime | str'))
-                fields.append(field_template.format(name=f"{column_name}_end", type='datetime | str'))
-                date_filters.append(date_filter_template.format(name=entity_name, column=column_name))
-        equals_filters.append(filter_template.format(name=entity_name, column=column_name, field=column_name))
-        in_filters.append(filter_template.format(name=entity_name, column=column_name, field=f"{column_name}_in"))
+                py_type = 'datetime | str'
+                add_set(sets, column_name, py_type)
+                add_equal(filters, column_name, py_type, entity_name)
+                add_datetime(filters, column_name, py_type, entity_name)
         if column_name != 'id':
             insert_columns.append(insert_template.format(column=column_name, entity_variable=underlined_word))
-            update_columns.append(f"'{column_name}'")
 
     # entity
     tab = '    '
-    filter_intent = f",\n{tab * 4}"
+    filter_intent = f"\n\n{tab}"
     for template_name, file_name in [('entity_template.txt', entity_name), ('criterion_template.txt', f"{entity_name}Criterion")]:
         template = pkg_resources.files(resources).joinpath(template_name).read_text()
-        template = template.format(entity_name=entity_name, table=table, columns=f'\n{tab}'.join(columns), fields=f'\n{tab}'.join(fields),
-                                   equals_filters=filter_intent.join(equals_filters), in_filters=filter_intent.join(in_filters),
-                                   gte_filters=filter_intent.join(gte_filters), lte_filters=filter_intent.join(lte_filters),
-                                   date_filters=filter_intent.join(date_filters), entity_package=entity_package.__package__)
+        template = template.format(entity_name=entity_name, table=table, columns=f'\n{tab}'.join(columns),
+                                   sets=filter_intent.join(sets), filters=filter_intent.join(filters),
+                                   entity_package=entity_package.__package__)
         entity_file = pkg_resources.files(entity_package).joinpath(f"{file_name}.py")
         with entity_file.open('w', encoding='utf-8') as file:
             file.write(template)
@@ -102,10 +125,8 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
     template = pkg_resources.files(resources).joinpath('dao_template.txt').read_text()
     template = template.format(base_dao_package=base_dao_package.__package__, base_dao_name=base_dao_name,
                                entity_package=entity_package.__package__, entity_name=entity_name, entity_variable=underlined_word,
-                               insert_columns=", ".join(f"\n{tab * 4}{item}" if index % 3 == 0 else item
-                                                        for index, item in enumerate(insert_columns)),
-                               update_columns=", ".join(f"\n{tab * 7}  {item}" if index % 3 == 0 else item
-                                                        for index, item in enumerate(update_columns)))
+                               insert_columns=", ".join(f"\n{tab * 4}{item}" if index % 2 == 0 else item
+                                                        for index, item in enumerate(insert_columns)))
     entity_file = pkg_resources.files(dao_package).joinpath(f"{entity_name}Dao.py")
     with entity_file.open('w', encoding='utf-8') as file:
         file.write(template)

@@ -1,6 +1,5 @@
 from sample.dao.BaseDao import BaseDao
 from sample.entity.Sample import Sample
-from sample.entity.SampleCriterion import SampleCriterion
 from sqldaogenerator.common.Criterion import Criterion
 from sqldaogenerator.common.transaction_holder import transactional, get_transaction
 
@@ -9,25 +8,26 @@ from sqldaogenerator.common.transaction_holder import transactional, get_transac
 
 class SampleDao(BaseDao):
 
-    def select_sample(self, condition: SampleCriterion) -> tuple[list[Sample], int]:
-        criterion = Criterion.builder().entity(Sample).condition(condition) \
-            .equals_filter().in_filter().gte_filter().lte_filter().date_filter().build().to_list()
+    def select_sample(self, criterion: Criterion) -> tuple[list[Sample], int]:
         with self.Session() as session:
-            orders = condition.order_by.split(' ')
-            query = session.query(Sample).filter(*criterion).order_by(eval(f"Sample.{orders[0]}.{orders[1]}()"))
+            criterion_list = criterion.to_list()
+            page = criterion.page
+            orders = page.order_by.split(' ')
+            query = session.query(Sample).filter(*criterion_list).order_by(eval(f"Sample.{orders[0]}.{orders[1]}()"))
             total = None
-            if condition.page is not None and condition.page_size is not None:
-                query = query.offset((condition.page - 1) * condition.page_size).limit(condition.page_size)
-                total = session.query(Sample).filter(*criterion).count()
+            if page.page_no is not None and page.page_size is not None:
+                query = query.offset((page.page_no - 1) * page.page_size).limit(page.page_size)
+                total = session.query(Sample).filter(*criterion_list).count()
             entities = query.all()
         return entities, len(entities) if total is None else total
 
     @transactional
-    def insert_sample(self, sample: SampleCriterion):
+    def insert_sample(self, criterion: Criterion):
         session = get_transaction()
         entity = Sample(
-                col_datetime=sample.col_datetime, col_double=sample.col_double, col_int=sample.col_int, 
-                col_text=sample.col_text, col_tinyint=sample.col_tinyint, col_var=sample.col_var)
+                col_datetime=criterion.get('col_datetime', None), col_double=criterion.get('col_double', None), 
+                col_int=criterion.get('col_int', None), col_text=criterion.get('col_text', None), 
+                col_tinyint=criterion.get('col_tinyint', None), col_var=criterion.get('col_var', None))
         session.add(entity)
         session.flush()
         session.refresh(entity)
@@ -35,22 +35,17 @@ class SampleDao(BaseDao):
         return entity
 
     @transactional
-    def update_sample(self, condition: SampleCriterion, sample: SampleCriterion):
+    def update_sample(self, criterion: Criterion):
         session = get_transaction()
-        criterion = Criterion.builder().entity(Sample).condition(condition) \
-            .equals_filter().in_filter().gte_filter().lte_filter().date_filter().build().to_list()
-        entities = session.query(Sample).filter(*criterion).all()
+        entities = session.query(Sample).filter(*criterion.to_list()).all()
         for entity in entities:
-            self.set_not_none(entity, sample, 
-                              'col_datetime', 'col_double', 'col_int', 
-                              'col_text', 'col_tinyint', 'col_var')
+            for key, value in criterion.items():
+                exec(f"entity.{key}=value")
 
     @transactional
-    def delete_sample(self, condition: SampleCriterion):
+    def delete_sample(self, criterion: Criterion):
         session = get_transaction()
-        criterion = Criterion.builder().entity(Sample).condition(condition) \
-            .equals_filter().in_filter().gte_filter().lte_filter().date_filter().build().to_list()
-        entities = session.query(Sample).filter(*criterion).all()
+        entities = session.query(Sample).filter(*criterion.to_list()).all()
         for entity in entities:
             session.delete(entity)
 
