@@ -11,8 +11,8 @@ from sqldaogenerator.generator.enums.MySqlTypeEnum import MySqlTypeEnum
 primary_key_template = "{column} = Column({type}, autoincrement=True, primary_key=True, comment='{comment}')"
 column_template = "{column} = Column({type}, comment='{comment}')"
 field_template = "{name}: {type} = None"
-filter_template = "({name}E.{column}, self.{field})"
-date_filter_template = "({name}E.{column}, (self.{column}_start, self.{column}_end))"
+filter_template = "({name}.{column}, criterion.{field})"
+date_filter_template = "({name}.{column}, (criterion.{column}_start, criterion.{column}_end))"
 insert_template = "{column}={entity_variable}.{column}"
 
 
@@ -33,7 +33,7 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
             select COLUMN_NAME, DATA_TYPE, COLUMN_KEY, COLUMN_COMMENT
             from information_schema.columns
             where table_name = '{table}'
-            """))
+            """)).all()
 
     # create entity, dao
     camelcased_word = re.findall('[A-Z][a-z0-9]*', entity_name)
@@ -88,14 +88,15 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
     # entity
     tab = '    '
     filter_intent = f",\n{tab * 4}"
-    template = pkg_resources.files(resources).joinpath('entity_template.txt').read_text()
-    template = template.format(name=entity_name, table=table, columns=f'\n{tab}'.join(columns), fields=f'\n{tab}'.join(fields),
-                               equals_filters=filter_intent.join(equals_filters), in_filters=filter_intent.join(in_filters),
-                               gte_filters=filter_intent.join(gte_filters), lte_filters=filter_intent.join(lte_filters),
-                               date_filters=filter_intent.join(date_filters))
-    entity_file = pkg_resources.files(entity_package).joinpath(f"{entity_name}.py")
-    with entity_file.open('w', encoding='utf-8') as file:
-        file.write(template)
+    for template_name, file_name in [('entity_template.txt', entity_name), ('criterion_template.txt', f"{entity_name}Criterion")]:
+        template = pkg_resources.files(resources).joinpath(template_name).read_text()
+        template = template.format(entity_name=entity_name, table=table, columns=f'\n{tab}'.join(columns), fields=f'\n{tab}'.join(fields),
+                                   equals_filters=filter_intent.join(equals_filters), in_filters=filter_intent.join(in_filters),
+                                   gte_filters=filter_intent.join(gte_filters), lte_filters=filter_intent.join(lte_filters),
+                                   date_filters=filter_intent.join(date_filters), entity_package=entity_package.__package__)
+        entity_file = pkg_resources.files(entity_package).joinpath(f"{file_name}.py")
+        with entity_file.open('w', encoding='utf-8') as file:
+            file.write(template)
 
     # dao
     template = pkg_resources.files(resources).joinpath('dao_template.txt').read_text()

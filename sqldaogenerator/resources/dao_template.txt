@@ -1,5 +1,6 @@
 from {base_dao_package}.{base_dao_name} import {base_dao_name}
-from {entity_package}.{entity_name} import {entity_name}E, {entity_name}
+from {entity_package}.{entity_name} import {entity_name}
+from {entity_package}.{entity_name}Criterion import {entity_name}Criterion
 from sqldaogenerator.common.Criterion import Criterion
 from sqldaogenerator.common.transaction_holder import transactional, get_transaction
 
@@ -8,24 +9,23 @@ from sqldaogenerator.common.transaction_holder import transactional, get_transac
 
 class {entity_name}Dao({base_dao_name}):
 
-    def select_{entity_variable}(self, condition: {entity_name}) -> tuple[list[{entity_name}E], int]:
-        criterion = Criterion.builder() \
-            .equals_filter(condition.equals_filters()).in_filter(condition.in_filters()).gte_filter(condition.gte_filters()) \
-            .lte_filter(condition.lte_filters()).date_filter(condition.date_filters()).build().to_list()
+    def select_{entity_variable}(self, condition: {entity_name}Criterion) -> tuple[list[{entity_name}], int]:
+        criterion = Criterion.builder().entity({entity_name}).condition(condition) \
+            .equals_filter().in_filter().gte_filter().lte_filter().date_filter().build().to_list()
         with self.Session() as session:
             orders = condition.order_by.split(' ')
-            query = session.query({entity_name}E).filter(*criterion).order_by(eval(f"{entity_name}E.{{orders[0]}}.{{orders[1]}}()"))
+            query = session.query({entity_name}).filter(*criterion).order_by(eval(f"{entity_name}.{{orders[0]}}.{{orders[1]}}()"))
             total = None
             if condition.page is not None and condition.page_size is not None:
                 query = query.offset((condition.page - 1) * condition.page_size).limit(condition.page_size)
-                total = session.query({entity_name}E).filter(*criterion).count()
+                total = session.query({entity_name}).filter(*criterion).count()
             entities = query.all()
         return entities, len(entities) if total is None else total
 
     @transactional
-    def insert_{entity_variable}(self, {entity_variable}: {entity_name}):
+    def insert_{entity_variable}(self, {entity_variable}: {entity_name}Criterion):
         session = get_transaction()
-        entity = {entity_name}E({insert_columns})
+        entity = {entity_name}({insert_columns})
         session.add(entity)
         session.flush()
         session.refresh(entity)
@@ -33,22 +33,20 @@ class {entity_name}Dao({base_dao_name}):
         return entity
 
     @transactional
-    def update_{entity_variable}(self, condition: {entity_name}, {entity_variable}: {entity_name}):
+    def update_{entity_variable}(self, condition: {entity_name}Criterion, {entity_variable}: {entity_name}Criterion):
         session = get_transaction()
-        criterion = Criterion.builder() \
-            .equals_filter(condition.equals_filters()).in_filter(condition.in_filters()).gte_filter(condition.gte_filters()) \
-            .lte_filter(condition.lte_filters()).date_filter(condition.date_filters()).build().to_list()
-        entities = session.query({entity_name}E).filter(*criterion).all()
+        criterion = Criterion.builder().entity({entity_name}).condition(condition) \
+            .equals_filter().in_filter().gte_filter().lte_filter().date_filter().build().to_list()
+        entities = session.query({entity_name}).filter(*criterion).all()
         for entity in entities:
             self.set_not_none(entity, {entity_variable}, {update_columns})
 
     @transactional
-    def delete_{entity_variable}(self, condition: {entity_name}):
+    def delete_{entity_variable}(self, condition: {entity_name}Criterion):
         session = get_transaction()
-        criterion = Criterion.builder() \
-            .equals_filter(condition.equals_filters()).in_filter(condition.in_filters()).gte_filter(condition.gte_filters()) \
-            .lte_filter(condition.lte_filters()).date_filter(condition.date_filters()).build().to_list()
-        entities = session.query({entity_name}E).filter(*criterion).all()
+        criterion = Criterion.builder().entity({entity_name}).condition(condition) \
+            .equals_filter().in_filter().gte_filter().lte_filter().date_filter().build().to_list()
+        entities = session.query({entity_name}).filter(*criterion).all()
         for entity in entities:
             session.delete(entity)
 
