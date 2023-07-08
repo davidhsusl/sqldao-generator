@@ -13,11 +13,23 @@ column_template = "{column} = Column({type}, comment='{comment}')"
 set_template = """def set_{column}(self, value: {type}):
         self.values['{column}'] = value
         return self"""
-filter_template = """def {column}{suffix}(self, value: {type} = None{other}):
+ifelse_filter_template = """def {column}{suffix}(self, value: {type} = None, reverse=False{other}):
+        if value is not None{condition}:
+            if not reverse:
+                self.filters.append({entity_name}.{column}{if_expression})
+            else:
+                self.filters.append({entity_name}.{column}{else_expression})
+        return self"""
+null_filter_template = """def {column}{suffix}(self, reverse=False):
+        if not reverse:
+            self.filters.append({entity_name}.{column}{if_expression})
+        else:
+            self.filters.append({entity_name}.{column}{else_expression})
+        return self"""
+filter_template = """def {column}{suffix}(self, value: {type} = None):
         if value is not None{condition}:
             self.filters.append({entity_name}.{column}{expression})
         return self"""
-insert_template = "{column}=criterion.get('{column}', None)"
 
 
 def add_set(sets: list[str], column: str, type: str):
@@ -25,41 +37,53 @@ def add_set(sets: list[str], column: str, type: str):
 
 
 def add_equal(filters: list[str], column: str, type: str, entity_name: str):
-    filters.append(filter_template.format(column=column, suffix='', type=type, entity_name=entity_name,
-                                          condition=" and value != ''", expression=' == value', other=''))
-    filters.append(filter_template.format(column=column, suffix='_in', type=f"list[{type}]", entity_name=entity_name,
-                                          condition=" and len(value) > 0", expression='.in_(value)', other=''))
+    filters.append(ifelse_filter_template.format(column=column, suffix='', type=type, entity_name=entity_name,
+                                                 condition='', if_expression=' == value', else_expression=' != value', other=''))
+    filters.append(null_filter_template.format(column=column, suffix='_null', entity_name=entity_name,
+                                               if_expression='.is_(None)', else_expression='.isnot(None)'))
+    filters.append(ifelse_filter_template.format(column=column, suffix='_in', type=f"list[{type}]", entity_name=entity_name,
+                                                 condition=" and len(value) > 0", if_expression='.in_(value)',
+                                                 else_expression='.notin_(value)', other=''))
 
 
 def add_num(filters: list[str], column: str, type: str, entity_name: str):
     filters.append(filter_template.format(column=column, suffix='_gte', type=type, entity_name=entity_name,
-                                          condition="", expression=' >= value', other=''))
+                                          condition="", expression=' >= value'))
     filters.append(filter_template.format(column=column, suffix='_lte', type=type, entity_name=entity_name,
-                                          condition="", expression=' <= value', other=''))
+                                          condition="", expression=' <= value'))
 
 
 def add_datetime(filters: list[str], column: str, type: str, entity_name: str):
     filters.append(filter_template.format(column=column, suffix='_start', type=type, entity_name=entity_name,
-                                          condition=" and value != ''", expression=' >= value', other=''))
+                                          condition='', expression=' >= value'))
     filters.append(filter_template.format(column=column, suffix='_end', type=type, entity_name=entity_name,
-                                          condition=" and value != ''", expression=' <= value', other=''))
+                                          condition='', expression=' <= value'))
 
 
 def add_like(filters: list[str], column: str, type: str, entity_name: str):
-    filters.append(filter_template.format(column=column, suffix='_like', type=type, entity_name=entity_name,
-                                          condition=" and value != ''", expression='.like(f"{left}{value}{right}")',
-                                          other=", left='%', right='%'"))
+    filters.append(ifelse_filter_template.format(column=column, suffix='_like', type=type, entity_name=entity_name,
+                                                 condition=" and value != ''", if_expression='.like(f"{left}{value}{right}")',
+                                                 else_expression='.not_like(f"{left}{value}{right}")', other=", left='%', right='%'"))
 
 
-def generate(user: str, password: str, host: str, port: int, database: str, base_dao_package: ModuleType, base_dao_name: str,
-             entity_package: ModuleType, dao_package: ModuleType, table: str, entity_name: str, override_base_dao=False):
+def generate(user: str, password: str, host: str, port: int, database: str,
+             datasource_package: ModuleType, datasource_name: str, base_dao_package: ModuleType, base_dao_name: str,
+             dao_package: ModuleType, entity_package: ModuleType, entity_name: str, table: str, override_datasource=False):
+    # create a Datasource
+    datasource_file = pkg_resources.files(datasource_package).joinpath(f"{datasource_name}.py")
+    if override_datasource or not datasource_file.is_file():
+        template = pkg_resources.files(resources).joinpath('datasource_template.txt').read_text()
+        template = template.format(datasource_name=datasource_name, user=user, password=password, host=host, port=port, dbname=database)
+        with datasource_file.open('w', encoding='utf-8') as file:
+            file.write(template)
+
     # create a BaseDao
     base_dao_file = pkg_resources.files(base_dao_package).joinpath(f"{base_dao_name}.py")
-    if override_base_dao or not base_dao_file.is_file():
-        template = pkg_resources.files(resources).joinpath('base_dao_template.txt').read_text()
-        template = template.format(name=base_dao_name, user=user, password=password, host=host, port=port, dbname=database)
-        with base_dao_file.open('w', encoding='utf-8') as file:
-            file.write(template)
+    template = pkg_resources.files(resources).joinpath('base_dao_template.txt').read_text()
+    template = template.format(base_dao_name=base_dao_name,
+                               datasource_package=datasource_package.__package__, datasource_name=datasource_name)
+    with base_dao_file.open('w', encoding='utf-8') as file:
+        file.write(template)
 
     connection_string = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
     engine = create_engine(connection_string, echo=True, pool_recycle=270)
@@ -68,6 +92,7 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
             select COLUMN_NAME, DATA_TYPE, COLUMN_KEY, COLUMN_COMMENT
             from information_schema.columns
             where table_name = '{table}'
+            order by ORDINAL_POSITION
             """)).all()
 
     # create entity, dao
@@ -76,10 +101,10 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
     columns = []
     sets = []
     filters = []
-    insert_columns = []
     for result in results:
         column_name = result.COLUMN_NAME.lower()
-        data_type = result.DATA_TYPE
+        data_type = result.DATA_TYPE.decode() if isinstance(result.DATA_TYPE, bytes) else result.DATA_TYPE
+        comment = result.COLUMN_COMMENT.decode() if isinstance(result.COLUMN_COMMENT, bytes) else result.COLUMN_COMMENT
 
         # column
         if result.COLUMN_KEY == 'PRI':
@@ -87,7 +112,7 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
         else:
             template = column_template
         columns.append(template.format(
-            column=column_name, comment=result.COLUMN_COMMENT, type=MySqlTypeEnum[data_type].value))
+            column=column_name, comment=comment, type=MySqlTypeEnum[data_type].value))
 
         # fields, filters
         match [column_name, data_type]:
@@ -106,8 +131,6 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
                 add_set(sets, column_name, py_type)
                 add_equal(filters, column_name, py_type, entity_name)
                 add_datetime(filters, column_name, py_type, entity_name)
-        if column_name != 'id':
-            insert_columns.append(insert_template.format(column=column_name, entity_variable=underlined_word))
 
     # entity
     tab = '    '
@@ -124,9 +147,7 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
     # dao
     template = pkg_resources.files(resources).joinpath('dao_template.txt').read_text()
     template = template.format(base_dao_package=base_dao_package.__package__, base_dao_name=base_dao_name,
-                               entity_package=entity_package.__package__, entity_name=entity_name, entity_variable=underlined_word,
-                               insert_columns=", ".join(f"\n{tab * 4}{item}" if index % 2 == 0 else item
-                                                        for index, item in enumerate(insert_columns)))
+                               entity_package=entity_package.__package__, entity_name=entity_name, entity_variable=underlined_word)
     entity_file = pkg_resources.files(dao_package).joinpath(f"{entity_name}Dao.py")
     with entity_file.open('w', encoding='utf-8') as file:
         file.write(template)
@@ -134,5 +155,5 @@ def generate(user: str, password: str, host: str, port: int, database: str, base
 
 if __name__ == '__main__':
     generate('daniel', '0614', 'localhost', 3306, 'database_test',
-             base_dao_package=dao, base_dao_name='BaseDao', override_base_dao=True,
-             entity_package=entity, dao_package=dao, table='t_sample', entity_name='Sample')
+             datasource_package=dao, datasource_name='Datasource', base_dao_package=dao, base_dao_name='BaseDao',
+             dao_package=dao, entity_package=entity, entity_name='Sample', table='t_sample', override_datasource=True)

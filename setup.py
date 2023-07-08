@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='sqldao-generator',
-    version='0.0.1',
+    version='0.1.0',
     author='Daniel Hsu',
     description='SqlAlchemy DAO generator',
     url='https://github.com/davidhsusl/sqldao-generator',
@@ -11,7 +11,7 @@ setup(
     packages=find_packages(include=['sqldaogenerator.*']),
     package_data={'': ['*.json', '*.txt']},
     install_requires=[
-        'mysql-connector-python==>=8.0.0,<9.0.0',
+        'mysql-connector-python>=8.0.0,<9.0.0',
         'SQLAlchemy>=2.0.0,<3.0.0'
     ],
     author_email='',
