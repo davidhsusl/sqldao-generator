@@ -4,7 +4,6 @@ from types import ModuleType
 
 from sqlalchemy import create_engine, text
 
-from sample import dao, entity
 from sqldaogenerator import resources
 from sqldaogenerator.generator.enums.MySqlTypeEnum import MySqlTypeEnum
 
@@ -151,9 +150,3 @@ def generate(user: str, password: str, host: str, port: int, database: str,
     entity_file = pkg_resources.files(dao_package).joinpath(f"{entity_name}Dao.py")
     with entity_file.open('w', encoding='utf-8') as file:
         file.write(template)
-
-
-if __name__ == '__main__':
-    generate('daniel', '0614', 'localhost', 3306, 'database_test',
-             datasource_package=dao, datasource_name='Datasource', base_dao_package=dao, base_dao_name='BaseDao',
-             dao_package=dao, entity_package=entity, entity_name='Sample', table='t_sample', override_datasource=True)

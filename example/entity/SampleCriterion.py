@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from sample.entity.Sample import Sample
+from example.entity.Sample import Sample
 from sqldaogenerator.common.Criterion import Criterion
 from sqldaogenerator.entity.Page import Page
 

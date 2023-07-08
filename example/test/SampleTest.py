@@ -2,8 +2,8 @@ import inspect
 import unittest
 from datetime import datetime, timedelta
 
-from sample.dao.SampleDao import sample_dao
-from sample.entity.SampleCriterion import SampleCriterion
+from example.dao.SampleDao import sample_dao
+from example.entity.SampleCriterion import SampleCriterion
 from sqldaogenerator.common.transaction_holder import transactional
 
 date_format = '%Y-%m-%d %H:%M:%S'
