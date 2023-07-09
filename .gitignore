@@ -1,4 +1,7 @@
 venv
 .idea
+build
+dist
 *.iml
 test.py
+*.egg-info
