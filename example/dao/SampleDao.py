@@ -2,13 +2,13 @@
 from example.dao.BaseDao import BaseDao
 from example.entity.Sample import Sample
 from sqldaogenerator.common.Criterion import Criterion
-from sqldaogenerator.common.transaction_holder import transactional, get_transaction
+from sqldaogenerator.common.TransactionManager import transactional
 
 
 class SampleDao(BaseDao):
 
     def select_sample(self, criterion: Criterion) -> tuple[list[Sample], int]:
-        with self.Session() as session:
+        with self.new_transaction() as session:
             criterion_list = criterion.to_list()
             page = criterion.page
             orders = page.order_by.split(' ')
@@ -22,7 +22,7 @@ class SampleDao(BaseDao):
 
     @transactional
     def insert_sample(self, criterion: Criterion):
-        session = get_transaction()
+        session = self.get_transaction()
         entity = Sample(**criterion.values)
         session.add(entity)
         session.flush()
@@ -34,7 +34,7 @@ class SampleDao(BaseDao):
     def update_sample(self, criterion: Criterion):
         criterion_list = criterion.to_list()
         assert criterion_list is not None and len(criterion_list) > 0, 'Must have at least one condition in the update.'
-        session = get_transaction()
+        session = self.get_transaction()
         entities = session.query(Sample).filter(*criterion_list).all()
         for entity in entities:
             for key, value in criterion.items():
@@ -44,7 +44,7 @@ class SampleDao(BaseDao):
     def delete_sample(self, criterion: Criterion):
         criterion_list = criterion.to_list()
         assert criterion_list is not None and len(criterion_list) > 0, 'Must have at least one condition in the delete.'
-        session = get_transaction()
+        session = self.get_transaction()
         entities = session.query(Sample).filter(*criterion_list).all()
         for entity in entities:
             session.delete(entity)

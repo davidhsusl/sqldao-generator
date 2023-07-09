@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from example.dao.SampleDao import sample_dao
 from example.entity.SampleCriterion import SampleCriterion
-from sqldaogenerator.common.transaction_holder import transactional
+from sqldaogenerator.common.TransactionManager import transactional
 
 date_format = '%Y-%m-%d %H:%M:%S'
 
