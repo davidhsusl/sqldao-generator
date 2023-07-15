@@ -14,7 +14,12 @@ class SampleDao(BaseDao):
         criterion_list = criterion.to_list()
         assert self.is_in_modules(criterion_list, Sample), \
             'The expressions must be created by the Sample entity.'
-        with self.new_transaction() as session:
+        is_transaction_exists = self.is_transaction_exists()
+        if is_transaction_exists:
+            session = self.get_transaction()
+        else:
+            session = self.new_transaction()
+        try:
             page = criterion.page
             orders = page.order_by.split(' ')
             query = session.query(Sample).filter(*criterion_list) \
@@ -25,6 +30,9 @@ class SampleDao(BaseDao):
                     .limit(page.page_size)
                 total = session.query(Sample).filter(*criterion_list).count()
             entities = query.all()
+        finally:
+            if not is_transaction_exists:
+                session.close()
         return entities, total or len(entities)
 
     @transactional

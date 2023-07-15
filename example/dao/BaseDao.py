@@ -12,6 +12,9 @@ class BaseDao:
     def __init__(self):
         self.datasource = datasource
 
+    def is_transaction_exists(self):
+        return self.datasource.transactionManager.is_exists()
+
     def get_transaction(self):
         return self.datasource.transactionManager.get_transaction()
 

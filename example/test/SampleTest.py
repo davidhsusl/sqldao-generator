@@ -11,6 +11,7 @@ date_format = '%Y-%m-%d %H:%M:%S'
 
 class SampleTest(unittest.TestCase):
 
+    @transactional
     def test_crud(self):
         # create
         now = datetime.now()

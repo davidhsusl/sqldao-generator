@@ -14,7 +14,12 @@ class {entity_name}Dao({base_dao_name}):
         criterion_list = criterion.to_list()
         assert self.is_in_modules(criterion_list, {entity_name}), \
             'The expressions must be created by the {entity_name} entity.'
-        with self.new_transaction() as session:
+        is_transaction_exists = self.is_transaction_exists()
+        if is_transaction_exists:
+            session = self.get_transaction()
+        else:
+            session = self.new_transaction()
+        try:
             page = criterion.page
             orders = page.order_by.split(' ')
             query = session.query({entity_name}).filter(*criterion_list) \
@@ -25,6 +30,9 @@ class {entity_name}Dao({base_dao_name}):
                     .limit(page.page_size)
                 total = session.query({entity_name}).filter(*criterion_list).count()
             entities = query.all()
+        finally:
+            if not is_transaction_exists:
+                session.close()
         return entities, total or len(entities)
 
     @transactional

@@ -52,7 +52,8 @@ class TransactionManager:
         self.transaction_thread.is_exists = False
 
     def is_exists(self):
-        return hasattr(self.transaction_thread, 'is_exists') and self.transaction_thread.is_exists
+        return hasattr(self.transaction_thread, 'is_exists') \
+            and self.transaction_thread.is_exists
 
     def get_transaction(self) -> Session:
         if self.is_exists():
