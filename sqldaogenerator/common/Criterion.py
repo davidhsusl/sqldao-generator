@@ -1,13 +1,15 @@
 from dataclasses import dataclass, field
 
+from sqlalchemy import BinaryExpression
+
 from sqldaogenerator.entity.Page import Page
 
 
 @dataclass
 class Criterion:
     page: Page
-    filters: list[any] = field(default_factory=list)
-    values: dict[any] = field(default_factory=dict)
+    filters: list[BinaryExpression] = field(default_factory=list)
+    values: dict[str, any] = field(default_factory=dict)
 
     def __getitem__(self, item):
         return self.values[item]

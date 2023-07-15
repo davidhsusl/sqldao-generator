@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='sqldao-generator',
-    version='0.1.2',
+    version='0.2.0',
     author='Daniel Hsu',
     description='SqlAlchemy DAO generator',
     long_description_content_type='text/markdown',
