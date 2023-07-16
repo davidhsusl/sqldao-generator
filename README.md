@@ -101,7 +101,7 @@ total = sample_dao.delete(criterion)
 from sqldaogenerator.common.TransactionManager import transactional
 
 
-@transactional
+@transactional()
 def test_transactional(self):
     insert...
     update...

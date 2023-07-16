@@ -9,25 +9,6 @@ default_name = 'default'
 transaction_managers = {}
 
 
-def register_transaction_manager(name: str, transaction_manager):
-    transaction_managers.update({name: transaction_manager})
-
-
-def transactional(func):
-    def wrapper(*args, **kwargs):
-        if transaction_managers[default_name].is_exists():
-            info('Participating in an existing transaction.')
-            result = func(*args, **kwargs)
-        else:
-            info('Creating a new transaction.')
-            with transaction_managers[default_name] as session:
-                result = func(*args, **kwargs)
-                session.commit()
-        return result
-
-    return wrapper
-
-
 class TransactionManager:
     name: str
     session_maker: sessionmaker
@@ -63,3 +44,27 @@ class TransactionManager:
 
     def new_transaction(self):
         return self.session_maker()
+
+
+def register_transaction_manager(name: str,
+                                 transaction_manager: TransactionManager):
+    transaction_managers.update({name: transaction_manager})
+
+
+def transactional(auto_commit=True):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            if transaction_managers[default_name].is_exists():
+                info('Participating in an existing transaction.')
+                result = func(*args, **kwargs)
+            else:
+                info('Creating a new transaction.')
+                with transaction_managers[default_name] as session:
+                    result = func(*args, **kwargs)
+                    if auto_commit:
+                        session.commit()
+            return result
+
+        return wrapper
+
+    return decorator

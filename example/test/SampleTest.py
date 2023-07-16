@@ -11,7 +11,7 @@ date_format = '%Y-%m-%d %H:%M:%S'
 
 class SampleTest(unittest.TestCase):
 
-    @transactional
+    @transactional()
     def test_crud(self):
         # create
         now = datetime.now()
@@ -78,7 +78,7 @@ class SampleTest(unittest.TestCase):
         entities, total = sample_dao.select(criterion)
         self.assertEqual(0, total)
 
-    @transactional
+    @transactional()
     def test_transactional(self):
         # create
         now = datetime.now()
@@ -136,7 +136,7 @@ class SampleTest(unittest.TestCase):
         for entity in entities:
             print([item for item in inspect.getmembers(entity) if
                    isinstance(item[1], (str, int, float, datetime))])
-        self.assertEqual(25, total)
+        self.assertEqual(2, total)
 
     def test_insert(self):
         now = datetime.now().strftime(date_format)

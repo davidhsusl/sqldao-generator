@@ -10,32 +10,25 @@ from sqldaogenerator.common.TransactionManager import transactional
 
 class SampleDao(BaseDao):
 
+    @transactional(auto_commit=False)
     def select(self, criterion: Criterion) -> tuple[list[Sample], int]:
         criterion_list = criterion.to_list()
         assert self.is_in_modules(criterion_list, Sample), \
             'The expressions must be created by the Sample entity.'
-        is_transaction_exists = self.is_transaction_exists()
-        if is_transaction_exists:
-            session = self.get_transaction()
-        else:
-            session = self.new_transaction()
-        try:
-            page = criterion.page
-            orders = page.order_by.split(' ')
-            query = session.query(Sample).filter(*criterion_list) \
-                .order_by(eval(f"Sample.{orders[0]}.{orders[1]}()"))
-            total = None
-            if page.page_no is not None and page.page_size is not None:
-                query = query.offset((page.page_no - 1) * page.page_size) \
-                    .limit(page.page_size)
-                total = session.query(Sample).filter(*criterion_list).count()
-            entities = query.all()
-        finally:
-            if not is_transaction_exists:
-                session.close()
+        session = self.get_transaction()
+        page = criterion.page
+        orders = page.order_by.split(' ')
+        query = session.query(Sample).filter(*criterion_list) \
+            .order_by(eval(f"Sample.{orders[0]}.{orders[1]}()"))
+        total = None
+        if page.page_no is not None and page.page_size is not None:
+            query = query.offset((page.page_no - 1) * page.page_size) \
+                .limit(page.page_size)
+            total = session.query(Sample).filter(*criterion_list).count()
+        entities = query.all()
         return entities, total or len(entities)
 
-    @transactional
+    @transactional()
     def insert(self, criterion: Criterion):
         session = self.get_transaction()
         entity = Sample(**criterion.values)
@@ -45,7 +38,7 @@ class SampleDao(BaseDao):
         session.expunge(entity)
         return entity
 
-    @transactional
+    @transactional()
     def update(self, criterion: Criterion):
         criterion_list = criterion.to_list()
         assert criterion_list is not None and len(criterion_list) > 0, \
@@ -59,7 +52,7 @@ class SampleDao(BaseDao):
                 setattr(entity, key, value)
         return len(entities)
 
-    @transactional
+    @transactional()
     def delete(self, criterion: Criterion):
         criterion_list = criterion.to_list()
         assert criterion_list is not None and len(criterion_list) > 0, \
