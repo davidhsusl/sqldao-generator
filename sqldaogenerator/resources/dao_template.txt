@@ -17,13 +17,13 @@ class {entity_name}Dao({base_dao_name}):
             'The expressions must be created by the {entity_name} entity.'
         session = self.get_transaction()
         page = criterion.page
-        orders = page.order_by.split(' ')
-        query = session.query({entity_name}).filter(*criterion_list) \
-            .order_by(eval(f"{entity_name}.{{orders[0]}}.{{orders[1]}}()"))
+        query = session.query({entity_name}).filter(*criterion_list)
+        if page.order_by is not None:
+            orders = page.order_by.split(' ')
+            query = query.order_by(eval(f"{entity_name}.{{orders[0]}}.{{orders[1]}}()"))
         total = None
         if page.page_no is not None and page.page_size is not None:
-            query = query.offset((page.page_no - 1) * page.page_size) \
-                .limit(page.page_size)
+            query = query.offset((page.page_no - 1) * page.page_size).limit(page.page_size)
             total = session.query({entity_name}).filter(*criterion_list).count()
         entities = query.all()
         return entities, total or len(entities)

@@ -46,8 +46,7 @@ class TransactionManager:
         return self.session_maker()
 
 
-def register_transaction_manager(name: str,
-                                 transaction_manager: TransactionManager):
+def register_transaction_manager(name: str, transaction_manager: TransactionManager):
     transaction_managers.update({name: transaction_manager})
 
 

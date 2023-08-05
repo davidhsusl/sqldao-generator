@@ -7,7 +7,8 @@ from sqlalchemy import create_engine, text
 from sqldaogenerator import resources
 from sqldaogenerator.generator.enums.MySqlTypeEnum import MySqlTypeEnum
 
-primary_key_template = "{column} = Column({type}, autoincrement=True, primary_key=True, comment='{comment}')"
+primary_key_template = "{column} = Column({type}, autoincrement=True, primary_key=True, " \
+                       "comment='{comment}')"
 column_template = "{column} = Column({type}, comment='{comment}')"
 set_template = """def set_{column}(self, value: {type}):
         self.values['{column}'] = value
@@ -92,11 +93,9 @@ def generate(user: str, password: str, host: str, port: int, database: str,
              dao_package: ModuleType, entity_package: ModuleType,
              entity_name: str, table: str, override_datasource=False):
     # create a Datasource
-    datasource_file = pkg_resources.files(datasource_package) \
-        .joinpath(f"{datasource_name}.py")
+    datasource_file = pkg_resources.files(datasource_package).joinpath(f"{datasource_name}.py")
     if override_datasource or not datasource_file.is_file():
-        template = pkg_resources.files(resources) \
-            .joinpath('datasource_template.txt').read_text()
+        template = pkg_resources.files(resources).joinpath('datasource_template.txt').read_text()
         template = template.format(datasource_name=datasource_name,
                                    user=user, password=password, host=host,
                                    port=port, dbname=database)
@@ -104,10 +103,8 @@ def generate(user: str, password: str, host: str, port: int, database: str,
             file.write(template)
 
     # create a BaseDao
-    base_dao_file = pkg_resources.files(base_dao_package) \
-        .joinpath(f"{base_dao_name}.py")
-    template = pkg_resources.files(resources) \
-        .joinpath('base_dao_template.txt').read_text()
+    base_dao_file = pkg_resources.files(base_dao_package).joinpath(f"{base_dao_name}.py")
+    template = pkg_resources.files(resources).joinpath('base_dao_template.txt').read_text()
     template = template.format(base_dao_name=base_dao_name,
                                datasource_package=datasource_package.__package__,
                                datasource_name=datasource_name)
@@ -135,8 +132,7 @@ def generate(user: str, password: str, host: str, port: int, database: str,
         data_type = result.DATA_TYPE.decode() \
             if isinstance(result.DATA_TYPE, bytes) else result.DATA_TYPE
         comment = result.COLUMN_COMMENT.decode() \
-            if isinstance(result.COLUMN_COMMENT, bytes) \
-            else result.COLUMN_COMMENT
+            if isinstance(result.COLUMN_COMMENT, bytes) else result.COLUMN_COMMENT
 
         # column
         if result.COLUMN_KEY == 'PRI':
@@ -171,27 +167,23 @@ def generate(user: str, password: str, host: str, port: int, database: str,
     for template_name, file_name \
             in [('entity_template.txt', entity_name),
                 ('criterion_template.txt', f"{entity_name}Criterion")]:
-        template = pkg_resources.files(resources) \
-            .joinpath(template_name).read_text()
+        template = pkg_resources.files(resources).joinpath(template_name).read_text()
         template = template.format(entity_name=entity_name, table=table,
                                    columns=f'\n{tab}'.join(columns),
                                    sets=filter_intent.join(sets),
                                    filters=filter_intent.join(filters),
                                    entity_package=entity_package.__package__)
-        entity_file = pkg_resources.files(entity_package) \
-            .joinpath(f"{file_name}.py")
+        entity_file = pkg_resources.files(entity_package).joinpath(f"{file_name}.py")
         with entity_file.open('w', encoding='utf-8') as file:
             file.write(template)
 
     # dao
-    template = pkg_resources.files(resources) \
-        .joinpath('dao_template.txt').read_text()
+    template = pkg_resources.files(resources).joinpath('dao_template.txt').read_text()
     template = template.format(base_dao_package=base_dao_package.__package__,
                                base_dao_name=base_dao_name,
                                entity_package=entity_package.__package__,
                                entity_name=entity_name,
                                entity_variable=underlined_word)
-    entity_file = pkg_resources.files(dao_package) \
-        .joinpath(f"{entity_name}Dao.py")
+    entity_file = pkg_resources.files(dao_package).joinpath(f"{entity_name}Dao.py")
     with entity_file.open('w', encoding='utf-8') as file:
         file.write(template)

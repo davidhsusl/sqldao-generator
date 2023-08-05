@@ -14,14 +14,14 @@
 ```sql
 create table t_sample
 (
-    id           bigint unsigned auto_increment comment '主鍵'
+    id           bigint unsigned auto_increment comment 'ID'
         primary key,
-    col_var      varchar(100)  null comment '字串',
-    col_text     text          null comment '長字串',
-    col_tinyint  tinyint       null comment '微整數',
-    col_int      int           null comment '整數',
-    col_double   double(10, 2) null comment '浮點數',
-    col_datetime datetime      null comment '時間'
+    col_var      varchar(100)  null comment 'varchar',
+    col_text     text          null comment 'text',
+    col_tinyint  tinyint       null comment 'tinyint',
+    col_int      int           null comment 'int',
+    col_double   double(10, 2) null comment 'double',
+    col_datetime datetime      null comment 'datetime'
 );
 ```
 
@@ -41,7 +41,7 @@ generate('user', 'password', 'host', port, 'database',
 - Select
 
 ```python
-criterion = SampleCriterion.builder()
+criterion = (SampleCriterion.builder()
     .col_var_like('df')
     .col_text_in(['6'])
     .col_tinyint_gte(1)
@@ -51,7 +51,7 @@ criterion = SampleCriterion.builder()
     .col_datetime_end('2023-07-04 08:26:40')
     .page_no(1)
     .page_size(10)
-    .build()
+    .build())
 entities, total = sample_dao.select(criterion)
 ```
 
@@ -59,14 +59,14 @@ entities, total = sample_dao.select(criterion)
 
 ```python
 now = datetime.now().strftime(date_format)
-sample = SampleCriterion.builder()
+sample = (SampleCriterion.builder()
     .set_col_var('i')
     .set_col_text('6')
     .set_col_tinyint(1)
     .set_col_int(5)
     .set_col_double(3.5)
     .set_col_datetime(now)
-    .build()
+    .build())
 entity = sample_dao.insert(sample)
 print(entity.id)
 ```
@@ -74,7 +74,7 @@ print(entity.id)
 - Update
 
 ```python
-criterion = SampleCriterion.builder()
+criterion = (SampleCriterion.builder()
     .id_in([13, 15])
     .set_col_var('g')
     .set_col_text('m')
@@ -82,16 +82,16 @@ criterion = SampleCriterion.builder()
     .set_col_int(9)
     .set_col_double(6.5)
     .set_col_datetime(datetime.fromisoformat('2023-07-04T21:30:56'))
-    .build()
+    .build())
 total = sample_dao.update(criterion)
 ```
 
 - Delete
 
 ```python
-criterion = SampleCriterion.builder()
+criterion = (SampleCriterion.builder()
     .id(8)
-    .build()
+    .build())
 total = sample_dao.delete(criterion)
 ```
 

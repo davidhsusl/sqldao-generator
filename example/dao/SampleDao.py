@@ -17,13 +17,13 @@ class SampleDao(BaseDao):
             'The expressions must be created by the Sample entity.'
         session = self.get_transaction()
         page = criterion.page
-        orders = page.order_by.split(' ')
-        query = session.query(Sample).filter(*criterion_list) \
-            .order_by(eval(f"Sample.{orders[0]}.{orders[1]}()"))
+        query = session.query(Sample).filter(*criterion_list)
+        if page.order_by is not None:
+            orders = page.order_by.split(' ')
+            query = query.order_by(eval(f"Sample.{orders[0]}.{orders[1]}()"))
         total = None
         if page.page_no is not None and page.page_size is not None:
-            query = query.offset((page.page_no - 1) * page.page_size) \
-                .limit(page.page_size)
+            query = query.offset((page.page_no - 1) * page.page_size).limit(page.page_size)
             total = session.query(Sample).filter(*criterion_list).count()
         entities = query.all()
         return entities, total or len(entities)
