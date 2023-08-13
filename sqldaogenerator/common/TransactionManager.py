@@ -3,7 +3,7 @@ import threading
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 
-from sqldaogenerator.logger.logger import info
+from sqldaogenerator.logger.logger import log
 
 default_name = 'default'
 transaction_managers = {}
@@ -54,10 +54,10 @@ def transactional(auto_commit=True):
     def decorator(func):
         def wrapper(*args, **kwargs):
             if transaction_managers[default_name].is_exists():
-                info('Participating in an existing transaction.')
+                log.info('Participating in an existing transaction.')
                 result = func(*args, **kwargs)
             else:
-                info('Creating a new transaction.')
+                log.info('Creating a new transaction.')
                 with transaction_managers[default_name] as session:
                     result = func(*args, **kwargs)
                     if auto_commit:
