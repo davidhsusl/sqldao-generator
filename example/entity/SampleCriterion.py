@@ -14,7 +14,7 @@ from sqldaogenerator.entity.Page import Page
 
 @dataclass
 class SampleCriterion:
-    page = Page()
+    page: Page = field(default_factory=Page)
     filters: list[BinaryExpression] = field(default_factory=list)
     values: dict[str, any] = field(default_factory=dict)
 

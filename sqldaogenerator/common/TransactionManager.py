@@ -54,10 +54,12 @@ def transactional(auto_commit=True):
     def decorator(func):
         def wrapper(*args, **kwargs):
             if transaction_managers[default_name].is_exists():
-                log.info('Participating in an existing transaction.')
+                if auto_commit:
+                    log.info('Participating in an existing transaction.')
                 result = func(*args, **kwargs)
             else:
-                log.info('Creating a new transaction.')
+                if auto_commit:
+                    log.info('Creating a new transaction.')
                 with transaction_managers[default_name] as session:
                     result = func(*args, **kwargs)
                     if auto_commit:
