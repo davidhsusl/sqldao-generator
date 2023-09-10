@@ -10,11 +10,11 @@ from sqldaogenerator.common.Database import Database
 class Datasource(Database):
 
     def __init__(self):
-        user = 'daniel'
-        password = '0614'
-        host = 'localhost'
+        user = "daniel"
+        password = "0614"
+        host = "localhost"
         port = 3306
-        dbname = 'database_test'
+        dbname = "database_test"
         connection_string = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{dbname}"
         self.engine = create_engine(connection_string,
                                     echo=True,

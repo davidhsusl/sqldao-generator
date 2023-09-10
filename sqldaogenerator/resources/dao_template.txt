@@ -14,12 +14,12 @@ class {entity_name}Dao({base_dao_name}):
     def select(self, criterion: Criterion) -> tuple[list[{entity_name}], int]:
         criterion_list = criterion.to_list()
         assert self.is_in_modules(criterion_list, {entity_name}), \
-            'The expressions must be created by the {entity_name} entity.'
+            "The expressions must be created by the {entity_name} entity."
         session = self.get_transaction()
         page = criterion.page
         query = session.query({entity_name}).filter(*criterion_list)
         if page.order_by is not None:
-            orders = page.order_by.split(' ')
+            orders = page.order_by.split(" ")
             query = query.order_by(eval(f"{entity_name}.{{orders[0]}}.{{orders[1]}}()"))
         total = None
         if page.page_no is not None and page.page_size is not None:
@@ -42,9 +42,9 @@ class {entity_name}Dao({base_dao_name}):
     def update(self, criterion: Criterion):
         criterion_list = criterion.to_list()
         assert criterion_list is not None and len(criterion_list) > 0, \
-            'Must have at least one condition in the update.'
+            "Must have at least one condition in the update."
         assert self.is_in_modules(criterion_list, {entity_name}), \
-            'The expressions must be created by the {entity_name} entity.'
+            "The expressions must be created by the {entity_name} entity."
         session = self.get_transaction()
         entities = session.query({entity_name}).filter(*criterion_list).all()
         for entity in entities:
@@ -56,9 +56,9 @@ class {entity_name}Dao({base_dao_name}):
     def delete(self, criterion: Criterion):
         criterion_list = criterion.to_list()
         assert criterion_list is not None and len(criterion_list) > 0, \
-            'Must have at least one condition in the delete.'
+            "Must have at least one condition in the delete."
         assert self.is_in_modules(criterion_list, {entity_name}), \
-            'The expressions must be created by the {entity_name} entity.'
+            "The expressions must be created by the {entity_name} entity."
         session = self.get_transaction()
         entities = session.query({entity_name}).filter(*criterion_list).all()
         for entity in entities:

@@ -14,12 +14,12 @@ class SampleDao(BaseDao):
     def select(self, criterion: Criterion) -> tuple[list[Sample], int]:
         criterion_list = criterion.to_list()
         assert self.is_in_modules(criterion_list, Sample), \
-            'The expressions must be created by the Sample entity.'
+            "The expressions must be created by the Sample entity."
         session = self.get_transaction()
         page = criterion.page
         query = session.query(Sample).filter(*criterion_list)
         if page.order_by is not None:
-            orders = page.order_by.split(' ')
+            orders = page.order_by.split(" ")
             query = query.order_by(eval(f"Sample.{orders[0]}.{orders[1]}()"))
         total = None
         if page.page_no is not None and page.page_size is not None:
@@ -42,9 +42,9 @@ class SampleDao(BaseDao):
     def update(self, criterion: Criterion):
         criterion_list = criterion.to_list()
         assert criterion_list is not None and len(criterion_list) > 0, \
-            'Must have at least one condition in the update.'
+            "Must have at least one condition in the update."
         assert self.is_in_modules(criterion_list, Sample), \
-            'The expressions must be created by the Sample entity.'
+            "The expressions must be created by the Sample entity."
         session = self.get_transaction()
         entities = session.query(Sample).filter(*criterion_list).all()
         for entity in entities:
@@ -56,9 +56,9 @@ class SampleDao(BaseDao):
     def delete(self, criterion: Criterion):
         criterion_list = criterion.to_list()
         assert criterion_list is not None and len(criterion_list) > 0, \
-            'Must have at least one condition in the delete.'
+            "Must have at least one condition in the delete."
         assert self.is_in_modules(criterion_list, Sample), \
-            'The expressions must be created by the Sample entity.'
+            "The expressions must be created by the Sample entity."
         session = self.get_transaction()
         entities = session.query(Sample).filter(*criterion_list).all()
         for entity in entities:

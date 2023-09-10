@@ -14,14 +14,15 @@
 ```sql
 create table t_sample
 (
-    id           bigint unsigned auto_increment comment 'ID'
+    id           bigint unsigned auto_increment comment '主鍵'
         primary key,
-    col_var      varchar(100)  null comment 'varchar',
-    col_text     text          null comment 'text',
-    col_tinyint  tinyint       null comment 'tinyint',
-    col_int      int           null comment 'int',
-    col_double   double(10, 2) null comment 'double',
-    col_datetime datetime      null comment 'datetime'
+    col_var      varchar(100)  null comment '字串',
+    col_char     char(32)      null comment '固定字串',
+    col_text     text          null comment '長字串',
+    col_tinyint  tinyint       null comment '微整數',
+    col_int      int           null comment '整數',
+    col_double   double(10, 2) null comment '浮點數',
+    col_datetime datetime      null comment '時間'
 );
 ```
 
@@ -31,10 +32,10 @@ create table t_sample
 from example import dao, entity
 from sqldaogenerator.generator.mysql_generator import generate
 
-generate('user', 'password', 'host', port, 'database',
-         datasource_package=dao, datasource_name='Datasource', 
-         base_dao_package=dao, base_dao_name='BaseDao', dao_package=dao, 
-         entity_package=entity, entity_name='Sample', table='t_sample', 
+generate("user", "password", "host", port, "database",
+         datasource_package=dao, datasource_name="Datasource", 
+         base_dao_package=dao, base_dao_name="BaseDao", dao_package=dao, 
+         entity_package=entity, entity_name="Sample", table="t_sample", 
          override_datasource=True)
 ```
 
@@ -42,13 +43,13 @@ generate('user', 'password', 'host', port, 'database',
 
 ```python
 criterion = (SampleCriterion.builder()
-    .col_var_like('df')
-    .col_text_in(['6'])
+    .col_var_like("df")
+    .col_text_in(["6"])
     .col_tinyint_gte(1)
     .col_int_lte(5)
     .col_double(3.5)
-    .col_datetime_start('2023-07-04 08:26:40')
-    .col_datetime_end('2023-07-04 08:26:40')
+    .col_datetime_start("2023-07-04 08:26:40")
+    .col_datetime_end("2023-07-04 08:26:40")
     .page_no(1)
     .page_size(10)
     .build())
@@ -60,8 +61,8 @@ entities, total = sample_dao.select(criterion)
 ```python
 now = datetime.now().strftime(date_format)
 sample = (SampleCriterion.builder()
-    .set_col_var('i')
-    .set_col_text('6')
+    .set_col_var("i")
+    .set_col_text("6")
     .set_col_tinyint(1)
     .set_col_int(5)
     .set_col_double(3.5)
@@ -76,12 +77,12 @@ print(entity.id)
 ```python
 criterion = (SampleCriterion.builder()
     .id_in([13, 15])
-    .set_col_var('g')
-    .set_col_text('m')
+    .set_col_var("g")
+    .set_col_text("m")
     .set_col_tinyint(3)
     .set_col_int(9)
     .set_col_double(6.5)
-    .set_col_datetime(datetime.fromisoformat('2023-07-04T21:30:56'))
+    .set_col_datetime(datetime.fromisoformat("2023-07-04T21:30:56"))
     .build())
 total = sample_dao.update(criterion)
 ```

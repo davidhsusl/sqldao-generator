@@ -38,31 +38,35 @@ class SampleCriterion:
         return self
 
     def set_id(self, value: int):
-        self.values['id'] = value
+        self.values["id"] = value
         return self
 
     def set_col_var(self, value: str):
-        self.values['col_var'] = value
+        self.values["col_var"] = value
+        return self
+
+    def set_col_char(self, value: str):
+        self.values["col_char"] = value
         return self
 
     def set_col_text(self, value: str):
-        self.values['col_text'] = value
+        self.values["col_text"] = value
         return self
 
     def set_col_tinyint(self, value: int):
-        self.values['col_tinyint'] = value
+        self.values["col_tinyint"] = value
         return self
 
     def set_col_int(self, value: int):
-        self.values['col_int'] = value
+        self.values["col_int"] = value
         return self
 
     def set_col_double(self, value: float):
-        self.values['col_double'] = value
+        self.values["col_double"] = value
         return self
 
     def set_col_datetime(self, value: datetime | str):
-        self.values['col_datetime'] = value
+        self.values["col_datetime"] = value
         return self
 
     def id(self, value: int = None, reverse=False):
@@ -121,12 +125,43 @@ class SampleCriterion:
                 self.filters.append(Sample.col_var.notin_(value))
         return self
 
-    def col_var_like(self, value: str = None, reverse=False, left='%', right='%'):
-        if value is not None and value != '':
+    def col_var_like(self, value: str = None, reverse=False, left="%", right="%"):
+        if value is not None and value != "":
             if not reverse:
                 self.filters.append(Sample.col_var.like(f"{left}{value}{right}"))
             else:
                 self.filters.append(Sample.col_var.not_like(f"{left}{value}{right}"))
+        return self
+
+    def col_char(self, value: str = None, reverse=False):
+        if value is not None:
+            if not reverse:
+                self.filters.append(Sample.col_char == value)
+            else:
+                self.filters.append(Sample.col_char != value)
+        return self
+
+    def col_char_null(self, reverse=False):
+        if not reverse:
+            self.filters.append(Sample.col_char.is_(None))
+        else:
+            self.filters.append(Sample.col_char.isnot(None))
+        return self
+
+    def col_char_in(self, value: list[str] = None, reverse=False):
+        if value is not None and len(value) > 0:
+            if not reverse:
+                self.filters.append(Sample.col_char.in_(value))
+            else:
+                self.filters.append(Sample.col_char.notin_(value))
+        return self
+
+    def col_char_like(self, value: str = None, reverse=False, left="%", right="%"):
+        if value is not None and value != "":
+            if not reverse:
+                self.filters.append(Sample.col_char.like(f"{left}{value}{right}"))
+            else:
+                self.filters.append(Sample.col_char.not_like(f"{left}{value}{right}"))
         return self
 
     def col_text(self, value: str = None, reverse=False):
@@ -152,8 +187,8 @@ class SampleCriterion:
                 self.filters.append(Sample.col_text.notin_(value))
         return self
 
-    def col_text_like(self, value: str = None, reverse=False, left='%', right='%'):
-        if value is not None and value != '':
+    def col_text_like(self, value: str = None, reverse=False, left="%", right="%"):
+        if value is not None and value != "":
             if not reverse:
                 self.filters.append(Sample.col_text.like(f"{left}{value}{right}"))
             else:

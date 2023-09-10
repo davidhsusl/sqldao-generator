@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from sqldaogenerator.logger.logger import log
 
-default_name = 'default'
+default_name = "default"
 transaction_managers = {}
 
 
@@ -16,7 +16,7 @@ class TransactionManager:
 
     def __new__(cls, name: str, datasource):
         instance = super(TransactionManager, cls).__new__(cls)
-        if not hasattr(instance, 'session_maker'):
+        if not hasattr(instance, "session_maker"):
             instance.name = name
             instance.session_maker = sessionmaker(bind=datasource.engine)
         register_transaction_manager(name, instance)
@@ -33,14 +33,14 @@ class TransactionManager:
         self.transaction_thread.is_exists = False
 
     def is_exists(self):
-        return hasattr(self.transaction_thread, 'is_exists') \
+        return hasattr(self.transaction_thread, "is_exists") \
             and self.transaction_thread.is_exists
 
     def get_transaction(self) -> Session:
         if self.is_exists():
             return self.transaction_thread.session
         else:
-            raise LookupError('No existing transaction.')
+            raise LookupError("No existing transaction.")
 
     def new_transaction(self):
         return self.session_maker()
@@ -55,11 +55,12 @@ def transactional(auto_commit=True):
         def wrapper(*args, **kwargs):
             if transaction_managers[default_name].is_exists():
                 if auto_commit:
-                    log.info('Participating in an existing transaction.')
+                    log.info(f"{func.__module__}.{func.__name__} "
+                             f"participating in an existing transaction.")
                 result = func(*args, **kwargs)
             else:
                 if auto_commit:
-                    log.info('Creating a new transaction.')
+                    log.info(f"{func.__module__}.{func.__name__} creating a new transaction.")
                 with transaction_managers[default_name] as session:
                     result = func(*args, **kwargs)
                     if auto_commit:
