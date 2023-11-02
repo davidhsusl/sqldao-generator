@@ -6,7 +6,7 @@ from typing import Type
 from sqlalchemy import BinaryExpression
 
 from sqldaogenerator.common.Criterion import Criterion
-from example.dao.Datasource import datasource, Datasource
+from sqldaogenerator.resources.DatasourceTemplate import datasource, Datasource
 
 
 class BaseDao:

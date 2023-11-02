@@ -1,192 +1,132 @@
-import inspect
+import os
+
 import unittest
-import uuid
-from datetime import datetime, timedelta
 
-from example.dao.SampleDao import sample_dao
-from example.entity.SampleCriterion import SampleCriterion
-from sqldaogenerator.common.TransactionManager import transactional
+from datetime import datetime
 
-date_format = "%Y-%m-%d %H:%M:%S"
+os.environ['username'] = 'daniel'
+os.environ['password'] = '0614'
+os.environ['host'] = 'localhost'
+os.environ['port'] = '3306'
+os.environ['dbname'] = 'database_test'
+os.environ['echo'] = 'True'
+os.environ['transaction_name'] = 'default'
+
+from sqldaogenerator.resources.CriterionTemplate import SampleCriterion
+
+ignore_fields = ['_sa_instance_state']
+
+
+def to_dict(obj):
+    if isinstance(obj, list):
+        for i, o in enumerate(obj):
+            obj[i] = _to_dict(o)
+        return obj
+    return _to_dict(obj)
+
+
+def _to_dict(obj):
+    return {key: value for key, value in obj.__dict__.items() if key not in ignore_fields and value is not None}
 
 
 class SampleTest(unittest.TestCase):
 
-    @transactional()
-    def test_crud(self):
-        # create
-        uuid_str = str(uuid.uuid4()).replace("-", "")
-        now = datetime.now()
-        now_str = now.strftime(date_format)
-        sample = (SampleCriterion.builder()
-                  .set_col_var("a")
-                  .set_col_char(uuid_str)
-                  .set_col_text("b")
-                  .set_col_tinyint(0)
-                  .set_col_int(1)
-                  .set_col_double(2.5)
-                  .set_col_datetime(now_str)
-                  .build())
-        entity = sample_dao.insert(sample)
-        self.assertIsNotNone(entity.id)
-
-        # read
-        criterion_builder = (SampleCriterion.builder()
-                             .col_var_like("a")
-                             .col_text_in(["b"])
-                             .col_tinyint_gte(0)
-                             .col_int_lte(1)
-                             .col_double(2.5)
-                             .col_datetime_start(now_str)
-                             .col_datetime_end(now_str)
-                             .page_no(1)
-                             .page_size(10))
-        criterion = criterion_builder.build()
-        entities, total = sample_dao.select(criterion)
-        self.assertEqual(1, total)
-        self.assertEqual(entity.id, entities[0].id)
-        self.assertEqual(uuid_str, entities[0].col_char)
-
-        # update
-        one_day_later = (now + timedelta(days=1)).strftime(date_format)
-        criterion = (criterion_builder
-                     .set_col_var("c")
-                     .set_col_tinyint(2)
-                     .set_col_double(3.5)
-                     .set_col_datetime(one_day_later)
-                     .build())
-        row_count = sample_dao.update(criterion)
-        self.assertEqual(1, row_count)
-        criterion = (SampleCriterion.builder()
-                     .col_var_like("c")
-                     .col_text_in(["b"])
-                     .col_tinyint_gte(2)
-                     .col_int_lte(1)
-                     .col_double(3.5)
-                     .col_datetime_start(one_day_later)
-                     .col_datetime_end(one_day_later)
-                     .page_no(1)
-                     .page_size(10)
-                     .build())
-        entities, total = sample_dao.select(criterion)
-        self.assertEqual(1, total)
-        self.assertEqual(entity.id, entities[0].id)
-        self.assertEqual("c", entities[0].col_var)
-
-        # delete
-        criterion_for_delete = (SampleCriterion.builder()
-                                .id(entity.id)
-                                .build())
-        row_count = sample_dao.delete(criterion_for_delete)
-        self.assertEqual(1, row_count)
-        entities, total = sample_dao.select(criterion)
-        self.assertEqual(0, total)
-
-    @transactional()
-    def test_transactional(self):
-        # create
-        now = datetime.now()
-        now_str = now.strftime(date_format)
-        sample = (SampleCriterion.builder()
-                  .set_col_var("a")
-                  .set_col_text("b")
-                  .set_col_tinyint(0)
-                  .set_col_int(1)
-                  .set_col_double(2.5)
-                  .set_col_datetime(now_str)
-                  .build())
-        entity = sample_dao.insert(sample)
-        self.assertIsNotNone(entity.id)
-
-        # read
-        criterion_builder = (SampleCriterion.builder()
-                             .col_var_like("a")
-                             .col_text_in(["b"])
-                             .col_tinyint_gte(0)
-                             .col_int_lte(1)
-                             .col_double(2.5)
-                             .col_datetime_start(now_str)
-                             .col_datetime_end(now_str)
-                             .page_no(1)
-                             .page_size(10))
-        criterion = criterion_builder.build()
-        entities, total = sample_dao.select(criterion)
-        self.assertEqual(0, total)
-
-        # delete
-        criterion_for_delete = (SampleCriterion.builder()
-                                .id(entity.id)
-                                .build())
-        sample_dao.delete(criterion_for_delete)
-        entities, total = sample_dao.select(criterion)
-        self.assertEqual(0, total)
-
     def test_select(self):
-        criterion = (SampleCriterion.builder()
-                     .col_var_like("a")
-                     .col_text_in(["6"])
-                     .col_tinyint_gte(1)
-                     .col_int_lte(5)
-                     .col_double_in([3.5, 4.5])
-                     .col_datetime_start("2023-07-04 08:26:40")
-                     .col_datetime_end("2023-08-05 18:26:40")
-                     .page_no(1)
-                     .page_size(10)
-                     .order_by("id desc")
-                     .build())
-        # criterion = SampleCriterion.builder()
-        #     .col_tinyint_null(reverse=False)
-        #     .build()
-        entities, total = sample_dao.select(criterion)
-        for entity in entities:
-            print([item for item in inspect.getmembers(entity) if
-                   isinstance(item[1], (str, int, float, datetime))])
-        self.assertEqual(2, total)
+        samples, total = (SampleCriterion.builder()
+                          .where()
+                          .column_char('char2')
+                          .column_varchar('varchar')
+                          .column_text('text')
+                          # .column_json({'abc': 'json'})
+                          .column_tinyint(1)
+                          .column_int(9)
+                          .column_double(123.456)
+                          .column_datetime('2023-11-02 09:00:00')
+                          .column_timestamp('2023-11-02 09:16:27')
+                          .page_no(1)
+                          .page_size(10)
+                          .order_by('column_datetime desc')
+                          .select())
+        self.assertIsNotNone(samples)
+        self.assertIsNotNone(total)
+        self.assertGreater(len(samples), 0)
+        print(total)
+        print(len(samples))
+        print(to_dict(samples))
+
+    def test_select_distinct(self):
+        samples, total = (SampleCriterion.builder()
+                          .distinct()
+                          .column()
+                          .column_text()
+                          # .column_int()
+                          # .column_datetime()
+                          # .column_double()
+                          .where()
+                          .column_tinyint(1)
+                          .select())
+        self.assertIsNotNone(samples)
+        self.assertIsNotNone(total)
+        print(total)
+        print(to_dict(samples))
+
+    def test_select_group_by(self):
+        samples, total = (SampleCriterion.builder()
+                          .column()
+                          .column_text(group=True)
+                          # .column_datetime(group=True)
+                          .column_double(sum=True)
+                          .where()
+                          .column_tinyint(1)
+                          .select())
+        self.assertIsNotNone(samples)
+        self.assertIsNotNone(total)
+        print(total)
+        print(to_dict(samples))
 
     def test_insert(self):
-        now = datetime.now().strftime(date_format)
         sample = (SampleCriterion.builder()
-                  .set_col_var("abc")
-                  .set_col_text("6")
-                  .set_col_tinyint(1)
-                  .set_col_int(5)
-                  .set_col_double(4.5)
-                  .set_col_datetime(now)
-                  .build())
-        entity = sample_dao.insert(sample)
-        print(entity.id)
-        criterion = (SampleCriterion.builder()
-                     .col_datetime(now)
-                     .build())
-        entities, total = sample_dao.select(criterion)
-        print([item for item in inspect.getmembers(entities[0]) if
-               isinstance(item[1], (str, int, float, datetime))])
-        self.assertEqual(1, total)
+                  .modify()
+                  .column_char('char2')
+                  .column_varchar('varchar')
+                  .column_text('text')
+                  .column_json({'abc': 'json'})
+                  .column_tinyint(1)
+                  .column_int(10)
+                  .column_double(123.456)
+                  .column_datetime('2023-11-02 09:00:00')
+                  .column_timestamp(datetime.now())
+                  .insert())
+        self.assertIsNotNone(sample)
+        self.assertIsNotNone(sample.id)
+        print(to_dict(sample))
 
     def test_update(self):
-        criterion = (SampleCriterion.builder()
-                     .id_in([13, 15])
-                     .set_col_var("g")
-                     .set_col_text("m")
-                     .set_col_tinyint(3)
-                     .set_col_int(9)
-                     .set_col_double(6.5)
-                     .set_col_datetime(datetime.fromisoformat("2023-07-04T21:30:56"))
-                     .build())
-        sample_dao.update(criterion)
-        entities, total = sample_dao.select(criterion)
-        print([item for item in inspect.getmembers(entities[0]) if
-               isinstance(item[1], (str, int, float, datetime))])
-        self.assertEqual(2, total)
+        updated_count = (SampleCriterion.builder()
+                         .modify()
+                         .column_char('char0')
+                         .column_varchar('varchar0')
+                         .column_text('text0')
+                         .column_json({'abc': 'json0'})
+                         .column_tinyint(10)
+                         .column_int(100)
+                         .column_double(1230.456)
+                         .column_datetime('2023-12-02 09:00:00')
+                         .column_timestamp(datetime.now())
+                         .where()
+                         .id(1)
+                         .update())
+        self.assertIsNotNone(updated_count)
+        print(updated_count)
 
     def test_delete(self):
-        criterion = (SampleCriterion.builder()
-                     .id(8)
-                     .build())
-        sample_dao.delete(criterion)
-        entities, total = sample_dao.select(criterion)
-        self.assertEqual(0, total)
+        deleted_count = (SampleCriterion.builder()
+                         .where()
+                         .id(1)
+                         .delete())
+        self.assertIsNotNone(deleted_count)
+        print(deleted_count)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

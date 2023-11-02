@@ -5,8 +5,8 @@ If you need to do it, you should create another class.
 
 from sqldaogenerator.common.Criterion import Criterion
 from sqldaogenerator.common.TransactionManager import transactional
-from example.dao.BaseDao import BaseDao
-from example.entity.Sample import Sample
+from sqldaogenerator.resources.BaseDaoTemplate import BaseDao
+from sqldaogenerator.resources.EntityTemplate import Sample
 
 
 class SampleDao(BaseDao):

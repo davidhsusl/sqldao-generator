@@ -4,96 +4,122 @@
 
 ## Notice
 
-- Currently, only MySQL and one database are supported.
+- Currently, only MySQL is supported.
 
 ## Usage
 
-- See example/test/generator.py, SampleTest.py
+- For more example, See example/test/generator.py, SampleTest.py
 
 - Create a table first
 ```sql
 create table t_sample
 (
-    id           bigint unsigned auto_increment comment '主鍵'
+    id               bigint unsigned auto_increment comment 'ID'
         primary key,
-    col_var      varchar(100)  null comment '字串',
-    col_char     char(32)      null comment '固定字串',
-    col_text     text          null comment '長字串',
-    col_tinyint  tinyint       null comment '微整數',
-    col_int      int           null comment '整數',
-    col_double   double(10, 2) null comment '浮點數',
-    col_datetime datetime      null comment '時間'
-);
+    column_char      char(32)      null comment 'CHAR',
+    column_varchar   varchar(32)   null comment 'VARCHAR',
+    column_text      text          null comment 'TEXT',
+    column_json      json          null comment 'JSON',
+    column_tinyint   tinyint       null comment 'TINYINT',
+    column_int       int           null comment 'INT',
+    column_double    double(20, 8) null comment 'DOUBLE',
+    column_datetime  datetime      null comment 'DATETIME',
+    column_timestamp timestamp     null comment 'TIMESTAMP'
+)
+    comment 'TEST';
 ```
 
 - Generate a dao and entity from a table
 
 ```python
 from example import dao, entity
+from sqldaogenerator.generator.model.EntityCreateReq import EntityCreateReq
 from sqldaogenerator.generator.mysql_generator import generate
 
-generate("user", "password", "host", port, "database",
-         datasource_package=dao, datasource_name="Datasource", 
-         base_dao_package=dao, base_dao_name="BaseDao", dao_package=dao, 
-         entity_package=entity, entity_name="Sample", table="t_sample", 
+entity_tables = [
+    ('Sample', 't_sample'),
+]
+
+entities = []
+for entity_name, table in entity_tables:
+    entities.append(EntityCreateReq(entity, entity_name, table, dao))
+    or
+    entities.append(EntityCreateReq('my.package.entity', entity_name, table, 'my.package.dao'))
+
+generate('username', 'password', 'host', port, 'database',
+         datasource_package=dao, datasource_name='Datasource', 
+         base_dao_package=dao, base_dao_name='BaseDao', entities=entities,
          override_datasource=True)
+or
+generate('username', 'password', 'host', port, 'database',
+         datasource_package='my.package.dao', datasource_name='Datasource',
+         base_dao_package='my.package.dao', base_dao_name='BaseDao', entities=entities,
+         override_datasource=True, source_root=r'D:\my\project')
 ```
 
 - Select
 
 ```python
-criterion = (SampleCriterion.builder()
-    .col_var_like("df")
-    .col_text_in(["6"])
-    .col_tinyint_gte(1)
-    .col_int_lte(5)
-    .col_double(3.5)
-    .col_datetime_start("2023-07-04 08:26:40")
-    .col_datetime_end("2023-07-04 08:26:40")
-    .page_no(1)
-    .page_size(10)
-    .build())
-entities, total = sample_dao.select(criterion)
+samples, total = (SampleCriterion.builder()
+                  .where()
+                  .column_char('char2')
+                  .column_varchar('varchar')
+                  .column_text('text')
+                  .column_tinyint(1)
+                  .column_int(9)
+                  .column_double(123.456)
+                  .column_datetime('2023-11-02 09:00:00')
+                  .column_timestamp('2023-11-02 09:16:27')
+                  .page_no(1)
+                  .page_size(10)
+                  .order_by('column_datetime desc')
+                  .select())
 ```
 
 - Insert
 
 ```python
-now = datetime.now().strftime(date_format)
 sample = (SampleCriterion.builder()
-    .set_col_var("i")
-    .set_col_text("6")
-    .set_col_tinyint(1)
-    .set_col_int(5)
-    .set_col_double(3.5)
-    .set_col_datetime(now)
-    .build())
-entity = sample_dao.insert(sample)
-print(entity.id)
+          .modify()
+          .column_char('char3')
+          .column_varchar('varchar')
+          .column_text('text')
+          .column_json({'abc': 'json'})
+          .column_tinyint(1)
+          .column_int(10)
+          .column_double(123.456)
+          .column_datetime('2023-11-02 09:00:00')
+          .column_timestamp(datetime.now())
+          .insert())
+print(sample.id)
 ```
 
 - Update
 
 ```python
-criterion = (SampleCriterion.builder()
-    .id_in([13, 15])
-    .set_col_var("g")
-    .set_col_text("m")
-    .set_col_tinyint(3)
-    .set_col_int(9)
-    .set_col_double(6.5)
-    .set_col_datetime(datetime.fromisoformat("2023-07-04T21:30:56"))
-    .build())
-total = sample_dao.update(criterion)
+updated_count = (SampleCriterion.builder()
+                 .modify()
+                 .column_char('char0')
+                 .column_varchar('varchar0')
+                 .column_text('text0')
+                 .column_json({'abc': 'json0'})
+                 .column_tinyint(10)
+                 .column_int(100)
+                 .column_double(1230.456)
+                 .column_datetime('2023-12-02 09:00:00')
+                 .column_timestamp(datetime.now())
+                 .where()
+                 .id(4)
+                 .update())
 ```
 
 - Delete
 
 ```python
-criterion = (SampleCriterion.builder()
-    .id(8)
-    .build())
-total = sample_dao.delete(criterion)
+deleted_count = (SampleCriterion.builder()
+                 .where()
+                 .id(4)
+                 .delete())
 ```
 
 - Execute in the same transaction

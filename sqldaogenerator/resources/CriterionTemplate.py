@@ -10,8 +10,8 @@ from sqlalchemy import BinaryExpression, Column
 from sqldaogenerator.common.Criterion import Criterion
 from sqldaogenerator.common.CriterionDelegate import CriterionDelegate
 from sqldaogenerator.entity.Page import Page
-from example.dao.SampleDao import sample_dao
-from example.entity.Sample import Sample
+from sqldaogenerator.resources.DaoTemplate import sample_dao
+from sqldaogenerator.resources.EntityTemplate import Sample
 
 
 @dataclass

@@ -1,11 +1,15 @@
 create table t_sample
 (
-    id           bigint unsigned auto_increment comment "主鍵"
+    id               bigint unsigned auto_increment comment 'ID'
         primary key,
-    col_var      varchar(100)  null comment "字串",
-    col_text     text          null comment "長字串",
-    col_tinyint  tinyint       null comment "微整數",
-    col_int      int           null comment "整數",
-    col_double   double(10, 2) null comment "浮點數",
-    col_datetime datetime      null comment "時間"
-);
+    column_char      char(32)      null comment 'CHAR',
+    column_varchar   varchar(32)   null comment 'VARCHAR',
+    column_text      text          null comment 'TEXT',
+    column_json      json          null comment 'JSON',
+    column_tinyint   tinyint       null comment 'TINYINT',
+    column_int       int           null comment 'INT',
+    column_double    double(20, 8) null comment 'DOUBLE',
+    column_datetime  datetime      null comment 'DATETIME',
+    column_timestamp timestamp     null comment 'TIMESTAMP'
+)
+    comment 'TEST';
