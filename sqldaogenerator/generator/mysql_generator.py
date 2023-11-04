@@ -23,6 +23,9 @@ def generate(username: str, password: str, host: str, port: int, database: str,
     datasource_package = get_package(datasource_package)
     base_dao_package = get_package(base_dao_package)
 
+    tab = '    '
+    break_intent = f"\n\n{tab}"
+
     # create a Datasource
     if override_datasource or not datasource_file.is_file():
         template = pkg_resources.files(resources).joinpath('DatasourceTemplate.py').read_text().split('\n')
@@ -45,7 +48,14 @@ def generate(username: str, password: str, host: str, port: int, database: str,
     # create a BaseDao
     template = pkg_resources.files(resources).joinpath('BaseDaoTemplate.py').read_text().split('\n')
     scripts = []
+    query_transactions = ['auto_commit=False', f"name='{transaction_name}'"]
+    alter_transactions = [f"name='{transaction_name}'"]
     for line in template:
+        if transaction_name:
+            if line == '    @transactional(auto_commit=False)':
+                line = f"{tab}@transactional({', '.join(query_transactions)})"
+            elif line == '    @transactional()':
+                line = f"{tab}@transactional({', '.join(alter_transactions)})"
         if line == 'from sqldaogenerator.resources.DatasourceTemplate import datasource, Datasource':
             line = f"from {datasource_package}.{datasource_name} import datasource, {datasource_name}"
         else:
@@ -113,8 +123,6 @@ def generate(username: str, password: str, host: str, port: int, database: str,
                 filters.append(template.build_datetime_compare())
 
         # entity
-        tab = '    '
-        break_intent = f"\n\n{tab}"
         template = pkg_resources.files(resources).joinpath('EntityTemplate.py').read_text().split('\n')
         scripts = []
         for line in template:
@@ -163,14 +171,7 @@ def generate(username: str, password: str, host: str, port: int, database: str,
         # dao
         template = pkg_resources.files(resources).joinpath('DaoTemplate.py').read_text().split('\n')
         scripts = []
-        query_transactions = ['auto_commit=False', f"name='{transaction_name}'"]
-        alter_transactions = [f"name='{transaction_name}'"]
         for line in template:
-            if transaction_name:
-                if line == '    @transactional(auto_commit=False)':
-                    line = f"{tab}@transactional({', '.join(query_transactions)})"
-                elif line == '    @transactional()':
-                    line = f"{tab}@transactional({', '.join(alter_transactions)})"
             if line == 'from sqldaogenerator.resources.BaseDaoTemplate import BaseDao':
                 line = f"from {base_dao_package}.{base_dao_name} import {base_dao_name}"
             elif line == 'from sqldaogenerator.resources.EntityTemplate import Sample':

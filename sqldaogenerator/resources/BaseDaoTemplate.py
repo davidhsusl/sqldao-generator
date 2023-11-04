@@ -6,6 +6,7 @@ from typing import Type
 from sqlalchemy import BinaryExpression
 
 from sqldaogenerator.common.Criterion import Criterion
+from sqldaogenerator.common.TransactionManager import transactional
 from sqldaogenerator.resources.DatasourceTemplate import datasource, Datasource
 
 
@@ -24,13 +25,67 @@ class BaseDao:
     def new_transaction(self):
         return self.datasource.new_transaction()
 
+    @transactional(auto_commit=False)
+    def _select(self, criterion: Criterion, cls: Type) -> tuple[list, int]:
+        assert self._is_in_modules(criterion.filters, cls), \
+            f"The expressions must be created by the {cls.__name__} entity."
+        query = self._get_query(criterion, cls)
+        page = criterion.page
+        if page.order_by:
+            exec(f"from {cls.__module__} import {cls.__name__}")
+            orders = page.order_by.split(' ')
+            query = query.order_by(eval(f"{cls.__name__}.{orders[0]}.{orders[1]}()"))
+        total = None
+        if page.page_no and page.page_size:
+            query = query.offset((page.page_no - 1) * page.page_size).limit(page.page_size)
+            total = self._get_query(criterion, cls).count()
+        entities = query.all()
+        if entities and criterion.labels:
+            entities = self._convert(entities, criterion.labels, cls)
+        return entities, total or len(entities)
+
+    @transactional()
+    def _insert(self, criterion: Criterion, cls: Type):
+        session = self.get_transaction()
+        entity = cls(**criterion.values)
+        session.add(entity)
+        session.flush()
+        session.refresh(entity)
+        session.expunge(entity)
+        return entity
+
+    @transactional()
+    def _update(self, criterion: Criterion, cls: Type):
+        criterion_list = criterion.filters
+        assert criterion_list, 'Must have at least one condition in the update statement.'
+        assert self._is_in_modules(criterion_list, cls), \
+            f"The expressions must be created by the {cls.__name__} entity."
+        session = self.get_transaction()
+        entities = session.query(cls).filter(*criterion_list).all()
+        for entity in entities:
+            for key, value in criterion.items():
+                setattr(entity, key, value)
+        return len(entities)
+
+    @transactional()
+    def _delete(self, criterion: Criterion, cls: Type):
+        criterion_list = criterion.filters
+        assert criterion_list, 'Must have at least one condition in the delete statement.'
+        assert self._is_in_modules(criterion_list, cls), \
+            f"The expressions must be created by the {cls.__name__} entity."
+        session = self.get_transaction()
+        entities = session.query(cls).filter(*criterion_list).all()
+        for entity in entities:
+            session.delete(entity)
+        return len(entities)
+
     @staticmethod
-    def is_in_modules(expressions: list[BinaryExpression], *clss: type):
+    def _is_in_modules(expressions: list[BinaryExpression], *clss: type):
         modules = [cls.__module__ for cls in clss]
         return all(expression.left.entity_namespace.__module__ in modules for expression in expressions)
 
     @staticmethod
-    def convert(entities: list, labels: list[str], cls: Type):
+    def _convert(entities: list, labels: list[str], cls: Type):
         new_entities = []
         for entity in entities:
             new_entity = cls()
@@ -39,7 +94,7 @@ class BaseDao:
             new_entities.append(new_entity)
         return new_entities
 
-    def get_query(self, criterion: Criterion, cls: Type):
+    def _get_query(self, criterion: Criterion, cls: Type):
         session = self.get_transaction()
         query_columns = []
         if criterion.columns:
